@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %} Upload {% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="w-50">
+        <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0"> Upload SCORM (Zip File) </h4>
+                </div>
+            <div class="card-body">
+                <form id="uploadForm" action="{{url_for('routes.upload')}}" method="post" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        <label for="scorm_file" class="form-label">Upload File</label>
+                        {{ form.scorm_file(class="form-control") }}
+                        <div class="form-text">Maximum file size: 200MB</div>
+                    </div>
+                    <div class="form-floating mb-3">
+                        {{ form.course_title(class="form-control form-control-sm") }}
+                        <label for="floatingTextarea">Course Title</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        {{ form.description(class="form-control", style="min-height:100px;") }}
+                        <label for="floatingTextarea">Course Description</label>
+                    </div>
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                    <div id="uploadProgress" class="mt-3" style="display: none;">
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+                        </div>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">Uploading and processing...</small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div> 
+    </div>
+</div>
+<script>
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const form = document.getElementById('uploadForm');
+    // const formData = new FormData(this);
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressBar = uploadProgress.querySelector('.progress-bar');
+    
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Processing...';
+    uploadProgress.style.display = 'block';
+    
+    // Simulate progress
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 90) progress = 90;
+        progressBar.style.width = progress + '%';
+    }, 200);
+    form.submit();
+});
+</script>
+
+{% endblock %}

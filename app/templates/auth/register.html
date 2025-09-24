@@ -1,0 +1,425 @@
+{% extends 'base.html' %}
+{% block title %} Register {% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-5">
+            <div class="card-header text-center">
+                <h4 class="card-title mb-0"> Register </h4>
+            </div>
+            <div class="card-body">
+                <!-- <div class="row text-center">
+                <div class="fs-1 fw-semibold">Register to login and start learning</div>
+                </div> -->
+                <div class="row">
+                <form id="register-form-desktop" action="{{url_for('auth.register')}}" method="post" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <div class="mt-3">
+                    {{ form.full_name(class="form-control form-size", placeholder=form.full_name.label.text) }}
+                    <div class="invalid-feedback">Full name is required.</div>
+                    </div>
+
+                    <div class="mt-3">
+                    {{ form.state(class="form-select form-size text-body-secondary mb-3", id="state") }}
+                    <div class="invalid-feedback">Please select a state.</div>
+                    </div>
+
+                    <div class="mt-3">
+                    {{ form.district(class="form-select form-size text-body-secondary mb-3", id="district", disabled=True) }}
+                    <div class="invalid-feedback">Please select a district.</div>
+                    </div>
+
+                    <div class="mt-3">
+                    {{ form.block(class="form-select form-size text-body-secondary mb-3", id="block", disabled=True) }}
+                    <div class="invalid-feedback">Please select a block.</div>
+                    </div>
+
+                    <div class="mt-3">
+                    {{ form.email(class="form-control form-size", placeholder=form.email.label.text, autocomplete="off") }}
+                    <div class="invalid-feedback">Please provide a valid email.</div>
+                    </div>
+
+                    <div class="mt-3">
+                    {{ form.password(class="form-control form-size", placeholder="Password", autocomplete="off") }}
+                    <div class="invalid-feedback">Password must meet the required format.</div>
+                    </div>
+
+                    <div class="mt-2 text-center fs-8 text-body-secondary" name="passwordHelp">
+                    The password should be of 8 characters having at least one lowercase alphabet,
+                    one uppercase alphabet, one digit, and one special character
+                    </div>
+
+                    <div class="mt-3">
+                    {{ form.confirm_password(class="form-control form-size", placeholder="Confirm Password", autocomplete="off") }}
+                    <div class="invalid-feedback">Passwords must match.</div>
+                    </div>
+
+                    <div class="mt-3 d-flex justify-content-center align-items-center gap-2">
+                    <strong><label class="mb-0">Solve: {{captcha_question}} = ?</label></strong>
+                    {{ form.captcha_answer(class="form-control w-auto") }}<br>
+                    <div class="invalid-feedback">Please solve the captcha.</div>
+                    </div>
+                    <div class="d-grid">
+                    {{ form.submit(class="btn btn-primary mt-4 form-size init-loader", disabled=True) }}
+                    </div>
+                    <div class="mt-2 text-center">
+                    <p class="text-secondary">Are you a member? 
+                        <a href="{{url_for('auth.login')}}" style="color: red;" class="init-loader">Login Now</a>
+                    </p>
+                    </div>
+                </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- {#<script src="{{url_for('static', filename='js/customencrypt.js')}}"></script>#} -->
+<script>
+    (function (){
+        'use strict'
+        // Endpoints — adjust if your API differs
+    const ENDPOINTS = {
+        encrypt_key:'/api/decrypt_keys',
+        states: '/api/states',
+        districts: (stateId) => `/api/districts?state_id=${encodeURIComponent(stateId)}`,
+        blocks: (districtId) => `/api/blocks?district_id=${encodeURIComponent(districtId)}`
+    };
+
+    // Get selects by name (no need to add IDs)
+    const $state    = document.querySelector('select[name="state"]');
+    const $district = document.querySelector('select[name="district"]');
+    const $block    = document.querySelector('select[name="block"]');
+
+    // Get form contorls for validation
+    const form = document.querySelector("form");
+    const inputs = form.querySelectorAll("input, select, textarea");
+    const registerBtn = form.querySelector("input[type='submit']");
+    const password = form.querySelector("input[name='password']");
+    const confirmPassword = form.querySelector("input[name='confirm_password']");
+    const passwordHelp = document.querySelector("div[name='passwordHelp']");
+
+    // Initially disable register button
+    registerBtn.disabled = true;
+    
+
+    // Track visited fields
+    inputs.forEach(input => {
+        input.dataset.visited = "false";
+
+        // When user leaves field (blur), mark as visited & validate
+        input.addEventListener("blur", function () {
+            input.dataset.visited = "true";
+            validateField(input);
+            checkForm();
+        });
+
+        // Optional: live validation while typing (if already visited)
+        // input.addEventListener("input", function () {
+        //     if (input.dataset.visited === "true") {
+        //         validateField(input);
+        //         checkForm();
+        //     }
+        // });
+    });
+
+    let RSA_PUBLIC_KEY = null;
+    let keyLoaded = false;
+    let password_text = null;
+    let confirm_password_text = null;
+
+    // Fetch public key on page load (async/await)
+    async function fetchPublicKey() {
+        try {
+            const response = await fetch(ENDPOINTS.encrypt_key);
+            if (!response.ok) throw new Error('Failed to fetch encryption keys');
+            const data = await response.json();
+
+            if (!data.publicKey) throw new Error('Public key missing in response');
+            RSA_PUBLIC_KEY = data.publicKey;
+            keyLoaded = true;
+            console.log("RSA Public key loaded");
+        } catch (error) {
+            console.error("Error fetching encryption keys:", error);
+            keyLoaded = false;
+        }
+    }
+
+    // Encrypt a single password
+    function encryptPasswordRSA(plaintext) {
+        if (!RSA_PUBLIC_KEY) throw new Error("Public key not loaded.");
+        const encryptor = new JSEncrypt();
+        encryptor.setPublicKey(RSA_PUBLIC_KEY);
+        return encryptor.encrypt(plaintext);
+    }
+
+    // Encrypt all password fields before submit
+    function encryptAllPasswordFieldsRSA() {
+        const passwordFields = form.querySelectorAll('input[type="password"]');
+        passwordFields.forEach(field => {
+            if (field.dataset.encrypted === "true") return; // prevent double encryption
+            if (field.value.trim() !== "") {
+                try {
+                    field.value = encryptPasswordRSA(field.value);
+                    field.dataset.encrypted = "true"; // mark as encrypted
+                } catch (err) {
+                    console.error("❌ Encryption failed:", err);
+                    throw err;
+                }
+            }
+        });
+    }
+
+    // RSA encryption on Submit
+    form.addEventListener("submit", function (event) {
+        try {
+            encryptAllPasswordFieldsRSA();
+            form.submit();
+        } catch (error) {
+            console.error("❌ Encryption failed:", err);
+                    event.preventDefault(); // stop submission if encryption fails
+        }
+    });
+
+    // ✅ Function to check field validity
+    function validateField(field) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+        if (field.tagName === "SELECT") {
+            if (field.selectedIndex > 0) {
+                    field.classList.add("is-valid");
+                    field.classList.remove("is-invalid");
+                    return true;
+                } else {
+                    field.classList.add("is-invalid");
+                    field.classList.remove("is-valid");
+                    return false;
+                }
+            } else if (field.type === "email") {
+                if (emailRegex.test(field.value.trim())) {
+                    field.classList.add("is-valid");
+                    field.classList.remove("is-invalid");
+                    return true;
+                } else {
+                    field.classList.add("is-invalid");
+                    field.classList.remove("is-valid");
+                    return false;
+                }
+            } if (field.type === "password" && field.name === "password") {
+                if (field.value.trim() !== "" && passwordRegex.test(field.value)) {
+                    field.classList.add("is-valid");
+                    field.classList.remove("is-invalid");
+                    if (passwordHelp) passwordHelp.classList.remove("text-danger");
+                    return true;
+                } else {
+                    field.classList.add("is-invalid");
+                    field.classList.remove("is-valid");
+                    if (passwordHelp) passwordHelp.classList.add("text-danger");
+                    return false;
+                }
+            } else if (field.type === "password" && field.name === "confirm_password") {
+                confirm_password_text = field.value;
+                if (field.value.trim() !== "" && field.value === password.value) {
+                    field.classList.add("is-valid");
+                    field.classList.remove("is-invalid");
+                    return true;
+                } else {
+                    field.classList.add("is-invalid");
+                    field.classList.remove("is-valid");
+                    return false;
+                }
+            } else {
+                if (field.value.trim() !== "") {
+                    field.classList.add("is-valid");
+                    field.classList.remove("is-invalid");
+                    return true;
+                } else {
+                    field.classList.add("is-invalid");
+                    field.classList.remove("is-valid");
+                    return false;
+                }
+            }
+        }
+
+    // ✅ Function to check all fields before enabling button
+    function checkForm() {
+        let allValid = true;
+        inputs.forEach((field) => {
+            if (field.name !== 'submitBtn'){
+                // If any field not visited yet → form is not ready
+                if (field.dataset.visited !== "true") {
+                    allValid = false;
+                    return; // skip validation for this field
+                }
+
+                // If field visited but not valid → form is not ready
+                if (!validateField(field)) {
+                    allValid = false;
+                }
+            }
+        });
+        registerBtn.disabled = !allValid;
+        
+    }
+
+
+    // Guards to cancel/ignore stale requests if user changes selection quickly
+    let districtsAbort = null;
+    let blocksAbort = null;
+
+    // ---------- Helpers ----------
+    function resetSelect(sel, placeholder, disabled = true) {
+        sel.innerHTML = '';
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = placeholder;
+        // Keep first option as placeholder to satisfy "selectedIndex is not zero" logic
+        sel.appendChild(opt);
+        sel.selectedIndex = 0;
+        sel.disabled = !!disabled;
+        // if (placeholder == '— Select District —') {
+        //     const opt = document.createElement('option');
+        //     opt.value = '-1';
+        //     opt.textContent = 'State Official';
+        //     // Keep first option as placeholder to satisfy "selectedIndex is not zero" logic
+        //     sel.appendChild(opt);
+        // }
+        // else if (placeholder == '— Select Block —'){
+        //     const opt = document.createElement('option');
+        //     opt.value = '-1';
+        //     opt.textContent = 'District Official';
+        //     // Keep first option as placeholder to satisfy "selectedIndex is not zero" logic
+        //     sel.appendChild(opt);
+        // }
+    }
+
+    function populateSelect(sel, items, placeholder) {
+        resetSelect(sel, placeholder, false);
+        // Optional: sort alphabetically by name
+        items = (items || []).slice().sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+        for (const item of items) {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = item.name;
+        sel.appendChild(opt);
+        }
+    }
+
+    async function fetchJSON(url, { signal } = {}) {
+        const res = await fetch(url, { signal, headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status} on ${url}`);
+        const data = await res.json();
+        // Accept either a plain array or an object with "data"
+        return Array.isArray(data) ? data : (data.data || []);
+    }
+
+    function handleError(sel, message) {
+        resetSelect(sel, `— ${message} —`, true);
+    }
+
+
+    // ---------- Loaders ----------
+    async function loadStates() {
+        resetSelect($state, '— Loading States… —', true);
+        resetSelect($district, '— Select District —', true);
+        resetSelect($block, '— Select Block —', true);
+
+        try {
+        const states = await fetchJSON(ENDPOINTS.states);
+        if (!states.length) {
+            handleError($state, 'No states found');
+            return;
+        }
+        populateSelect($state, states, '— Select State —');
+        } catch (err) {
+        handleError($state, 'Failed to load states');
+        // console.error(err);
+        }
+    }
+
+    async function loadDistricts(stateId) {
+        // Cancel any in-flight districts request
+        if (districtsAbort) districtsAbort.abort();
+        districtsAbort = new AbortController();
+
+        resetSelect($district, '— Loading Districts… —', true);
+        resetSelect($block, '— Select Block —', true); // blocks depend on district
+
+        try {
+        const districts = await fetchJSON(ENDPOINTS.districts(stateId), { signal: districtsAbort.signal });
+        if (!districts.length) {
+            handleError($district, 'No districts found');
+            return;
+        }
+        populateSelect($district, districts, '— Select District —');
+        } catch (err) {
+        if (err.name === 'AbortError') return; // selection changed; ignore
+        handleError($district, 'Failed to load districts');
+        // console.error(err);
+        }
+    }
+
+    async function loadBlocks(districtId) {
+        // Cancel any in-flight blocks request
+        if (blocksAbort) blocksAbort.abort();
+        blocksAbort = new AbortController();
+
+        resetSelect($block, '— Loading Blocks… —', true);
+
+        try {
+        const blocks = await fetchJSON(ENDPOINTS.blocks(districtId), { signal: blocksAbort.signal });
+        if (!blocks.length) {
+            handleError($block, 'No blocks found');
+            return;
+        }
+        populateSelect($block, blocks, '— Select Block —');
+        } catch (err) {
+        if (err.name === 'AbortError') return; // selection changed; ignore
+        handleError($block, 'Failed to load blocks');
+        // console.error(err);
+        }
+    }
+
+    // ---------- Event handlers ----------
+    $state.addEventListener('change', () => {
+        // If first option (placeholder) selected, lock lower tiers
+        if ($state.selectedIndex === 0) {
+        resetSelect($district, '— Select a State —', true);
+        resetSelect($block, '— Select a District —', true);
+        $district.setAttribute('disabled','disabled');
+        $block.setAttribute('disabled','disabled');
+        // Also cancel any in-flight requests
+        if (districtsAbort) districtsAbort.abort();
+        if (blocksAbort) blocksAbort.abort();
+        return;
+        }
+        // Load districts for selected state
+        $district.removeAttribute('disabled');
+        $block.removeAttribute('disabled');
+        const stateId = $state.value;
+        loadDistricts(stateId);
+    });
+
+    $district.addEventListener('change', () => {
+        if ($district.selectedIndex === 0) {
+        resetSelect($block, '— Select a District —', true);
+        $block.setAttribute('disabled','disabled');
+        if (blocksAbort) blocksAbort.abort();
+        return;
+        }
+        $block.removeAttribute('disabled');
+        const districtId = $district.value;
+        loadBlocks(districtId);
+    });
+
+
+    // ---------- Init ----------
+    document.addEventListener('DOMContentLoaded', ()=>{
+        loadStates();
+        fetchPublicKey();
+    });
+
+    })();
+</script>
+
+{% endblock %}

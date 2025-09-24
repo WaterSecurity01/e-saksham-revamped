@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block title %} User in Role {% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-header align-middle text-center">
+            <h5>Add Users to Roles</h5> 
+        </div>
+        <div class="card-body">
+            <div class="mb-3 d-flex justify-content-between align-items-center">
+                <input type="text" id="searchInput" class="form-control me-4" placeholder="Search by username or role...">
+                <div id="pagination" class="btn-group me-4"></div>
+            </div>
+            <table class="table table-bordered table-sm" id="usersTable">
+                <thead>
+                    <tr class="text-center">
+                        <th class="bg-light sortable" data-sort="sno" style="cursor:pointer;">S.No &#8597;</th>
+                        <th class="bg-light sortable" data-sort="username" style="cursor:pointer;">Username &#8597;</th>
+                        <th class="bg-light">Select Role</th>
+                        <th class="bg-light sortable" data-sort="roles" style="cursor:pointer;">Roles &#8597;</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Table rows will be rendered by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+    // Prepare user data for JS (serialize from Jinja context)
+    const users = [
+        {% for user in users %}
+        {
+            sno: {{ loop.index }},
+            username: "{{ user.username|escape }}",
+            roles: [{% for r in user.roles %}"{{ r|escape }}"{% if not loop.last %},{% endif %}{% endfor %}],
+            id: {{ user.user_id }},
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    const roles = [
+        {% for role in roles %}
+        { id: {{ role.id }}, name: "{{ role.name|escape }}" }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    // Pagination, search, sort logic
+    let currentPage = 1;
+    const rowsPerPage = 10;
+    let filteredUsers = [...users];
+    let sortColumn = null;
+    let sortAsc = true;
+
+    function renderTable() {
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const pageUsers = filteredUsers.slice(start, end);
+
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = pageUsers.map((user, idx) => `
+            <tr>
+                <td class="align-middle">${start + idx + 1}</td>
+                <td class="align-middle">${user.username}</td>
+                <td class="align-middle d-flex">
+                    <div class="dropdown me-4">
+                        <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Select Options
+                        </button>
+                        <ul class="dropdown-menu">
+                            ${roles.map(role => `
+                                <li>
+                                    <div class="form-check dropdown-item">
+                                        <input class="form-check-input mx-2" type="checkbox" value="${role.id}" id="cb_${user.id}_${role.id}"
+                                            ${user.roles.includes(role.name) ? 'checked' : ''}>
+                                        <label class="form-check-label" for="cb_${user.id}_${role.id}">
+                                            ${role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                                        </label>
+                                    </div>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                    <input class="btn btn-primary btn-sm invisible" type="submit" value="Update" />
+                </td>
+                <td class="align-middle">${user.roles.join(', ')}</td>
+            </tr>
+        `).join('');
+        renderPagination();
+    }
+
+    function renderPagination() {
+        const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
+        const pagination = document.getElementById('pagination');
+        pagination.innerHTML = '';
+        for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-outline-primary btn-sm' + (i === currentPage ? ' active' : '');
+            btn.textContent = i;
+            btn.onclick = () => { currentPage = i; renderTable(); };
+            pagination.appendChild(btn);
+        }
+    }
+
+    document.getElementById('searchInput').addEventListener('input', function() {
+        const val = this.value.trim().toLowerCase();
+        filteredUsers = users.filter(u =>
+            u.username.toLowerCase().includes(val) ||
+            u.roles.some(r => r.toLowerCase().includes(val))
+        );
+        currentPage = 1;
+        renderTable();
+    });
+
+    document.querySelectorAll('.sortable').forEach(th => {
+        th.addEventListener('click', function() {
+            const col = th.dataset.sort;
+            if (sortColumn === col) sortAsc = !sortAsc;
+            else { sortColumn = col; sortAsc = true; }
+            filteredUsers.sort((a, b) => {
+                let va = a[col], vb = b[col];
+                if (Array.isArray(va)) va = va.join(', ');
+                if (Array.isArray(vb)) vb = vb.join(', ');
+                if (va < vb) return sortAsc ? -1 : 1;
+                if (va > vb) return sortAsc ? 1 : -1;
+                return 0;
+            });
+            currentPage = 1;
+            renderTable();
+        });
+    });
+
+    // Initial render
+    renderTable();
+</script>
+{% endblock %}

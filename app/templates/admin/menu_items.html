@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% block title %} Menu Items {% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <!-- Search Box -->
+     {% if menu_items %}
+    <div id="tableDiv">
+        <div class="d-flex mb-3" >
+            <input type="text" id="searchInput" class="form-control flex-fill me-3" placeholder="Search roles...">
+            <button class="btn btn-primary text-nowrap" id="btnAdd">Add New</button>
+        </div>
+
+        <!-- Roles Table -->
+        <table id="rolesTable" class="table table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th onclick="sortTable(0)" style="cursor:pointer">S.No</th>
+                    <th onclick="sortTable(1)" style="cursor:pointer">Display Name</th>
+                    <th onclick="sortTable(2)" style="cursor:pointer">Route URL</th>
+                    <th onclick="sortTable(3)" style="cursor:pointer">Icon Class</th>
+                    <th onclick="sortTable(4)" style="cursor:pointer">Parent</th>
+                    <th onclick="sortTable(5)" style="cursor:pointer">Order</th>
+                </tr>
+            </thead>
+            <tbody id="rolesBody">
+                {% for menu_item in menu_items %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ menu_item.name }}</td>
+                    <td>{{ menu_item.url }}</td>
+                    <td>{{ menu_item.icon }}</td>
+                    <td>{{ menu_item.parent_id }}</td>
+                    <td>{{ menu_item.order_index }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <!-- Pagination -->
+    <nav>
+        <ul class="pagination" id="pagination"></ul>
+    </nav>
+    </div>
+    <!-- Form Section (initially hidden) -->
+    <div class="w-50 mx-auto" id="formDiv" style="display: none">
+        <div class="card mb-3">
+            <div class="card-header text-center">
+                <h5>Insert Menu Items</h5>                
+            </div>
+            <div class="card-body">
+            <!-- Add Role Form -->
+                <form method="POST" action="{{ url_for('admin.menu_items') }}">
+                    {{ form.hidden_tag() }}
+                    <div class="d-grid gap-2">
+                        <div class="form-floating">
+                            {{ form.name(class="form-control", placeholder="Enter menu item display name") }}
+                            <label for="name">Menu Item Display Name</label>
+                        </div>
+                        <div class="form-floating">
+                            {{ form.url(class="form-control", placeholder="Enter url") }}
+                            <label for="url">URL</label>
+                        </div>
+                        <div class="form-floating">
+                            {{ form.icon(class="form-control", placeholder="Mention fontawesome free icon class") }}
+                            <label for="icon">Icon Class</label>
+                        </div>
+                        <div class="d-flex">
+                            <div class="form-group flex-grow-1">
+                                <label for="parent_id">Parent ID</label>
+                                {{ form.parent_id(class="form-select", placeholder="Enter parent ID") }}
+                            </div>
+                            <div class="form-group ml-3">
+                                <label for="order_index">Order</label>
+                                {{ form.order_index(class="form-control") }}
+                            </div>
+                        </div>
+                        <div class="d-flex">
+                            <button type="button" class="btn btn-cancel btn-outline-dark w-100 mx-2" id="btnCancel">Cancel</button>
+                            <button type="submit" class="btn btn-primary w-100 mx-2">Add Menu Item</button>                        
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="w-50 mx-auto" id="formDiv">
+        <div class="card mb-3">
+            <div class="card-header text-center">
+                <h5>Insert Menu Items</h5>                
+            </div>
+            <div class="card-body">
+            <!-- Add Role Form -->
+                <form method="POST" action="{{ url_for('admin.menu_items') }}">
+                    {{ form.hidden_tag() }}
+                    <div class="d-grid gap-2">
+                        <div class="form-floating">
+                            {{ form.name(class="form-control", placeholder="Enter menu item display name") }}
+                            <label for="name">Menu Item Display Name</label>
+                        </div>
+                        <div class="form-floating">
+                            {{ form.url(class="form-control", placeholder="Enter url") }}
+                            <label for="url">URL</label>
+                        </div>
+                        <div class="form-floating">
+                            {{ form.icon(class="form-control", placeholder="Mention fontawesome free icon class") }}
+                            <label for="icon">Icon Class</label>
+                        </div>
+                        <div class="d-flex">
+                            <div class="form-group flex-grow-1">
+                                <label for="parent_id">Parent ID</label>
+                                {{ form.parent_id(class="form-select", placeholder="Enter parent ID") }}
+                            </div>
+                            <div class="form-group ml-3">
+                                <label for="order_index">Order</label>
+                                {{ form.order_index(class="form-control") }}
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Add Menu Item</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+</div>
+
+<script>
+    form_div = document.getElementById('formDiv');
+    table_div = document.getElementById('tableDiv');
+    // --- ADD ---
+    document.getElementById('btnAdd').addEventListener('click', function() {
+        form_div.style.display = 'block';
+        table_div.style.display = 'none';
+    })
+    document.getElementById('btnCancel').addEventListener('click', function() {
+        form_div.style.display = 'none';
+        table_div.style.display = 'block';
+    })
+// --- SEARCH ---
+document.getElementById("searchInput").addEventListener("keyup", function() {
+    let filter = this.value.toLowerCase();
+    let rows = document.querySelectorAll("#rolesBody tr");
+    rows.forEach(row => {
+        let text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? "" : "none";
+    });
+    paginate(); // re-apply pagination after search
+});
+
+// --- SORT ---
+function sortTable(colIndex) {
+    let table = document.getElementById("rolesTable");
+    let rows = Array.from(table.rows).slice(1); // exclude header
+    let asc = table.getAttribute("data-sort-dir") !== "asc";
+    rows.sort((a, b) => {
+        let aText = a.cells[colIndex].innerText.trim().toLowerCase();
+        let bText = b.cells[colIndex].innerText.trim().toLowerCase();
+        return asc ? aText.localeCompare(bText, 'en', {numeric:true}) : bText.localeCompare(aText, 'en', {numeric:true});
+    });
+    rows.forEach(row => table.tBodies[0].appendChild(row));
+    table.setAttribute("data-sort-dir", asc ? "asc" : "desc");
+    paginate(); // reapply pagination
+}
+
+// --- PAGINATION ---
+const rowsPerPage = 5;
+let currentPage = 1;
+
+function paginate() {
+  let rows = Array.from(document.querySelectorAll("#rolesBody tr")); // ✅ all rows
+  let totalPages = Math.ceil(rows.length / rowsPerPage);
+
+  // hide all rows
+  rows.forEach(r => r.style.display = "none");
+
+  // show only current page rows
+  let start = (currentPage - 1) * rowsPerPage;
+  let end = start + rowsPerPage;
+  rows.slice(start, end).forEach(r => r.style.display = "");
+
+  // pagination controls
+  let pagination = document.getElementById("pagination");
+  pagination.innerHTML = "";
+  for (let i = 1; i <= totalPages; i++) {
+    let li = document.createElement("li");
+    li.className = "page-item " + (i === currentPage ? "active" : "");
+    let a = document.createElement("a");
+    a.className = "page-link";
+    a.href = "#";
+    a.innerText = i;
+    a.onclick = (e) => {
+      e.preventDefault();
+      currentPage = i;
+      paginate();
+    };
+    li.appendChild(a);
+    pagination.appendChild(li);
+  }
+}
+
+// Initialize pagination
+paginate();
+</script>
+{% endblock %}

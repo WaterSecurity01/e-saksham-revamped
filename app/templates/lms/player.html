@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--Links-->
+  <link rel="stylesheet" href="{{url_for('static', filename='css/bootstrap.min.css')}}">
+  <link rel="stylesheet" href="{{url_for('static', filename='css/style.css')}}">
+  <link rel="icon" href="{{ url_for('static', filename='assets/favicon.ico') }}">
+  <!--Scripts-->
+  <script src="{{url_for('static', filename='js/bootstrap.min.js')}}"></script>
+  <script src="{{url_for('static', filename='js/jsencrypt.min.js')}}"></script>
+  <title>Course Title</title>
+</head>
+<body>
+  <nav class="navbar bg-body-tertiary">
+    <div class="container-fluid">
+      <a class="navbar-brand mr-auto" href="#">Navbar</a>
+      <button type="button" class="btn-close ml-auto btn-danger" aria-label="Close" onclick="window.close()"></button>
+    </div>
+  </nav>
+  <div class="container mt-4">
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading course...</p>
+    </div>
+    <div class="ratio ratio-16x9">
+        <iframe src="{{url_for('.serve_scorm_content', course_id=course.id, filename=course.launch_url)}}?{{query_string|safe}}" frameborder="0" class="src"></iframe>
+    </div>  
+  </div>
+  <script>
+  class ScormAPI {
+      constructor(courseId) {
+        this.courseId = courseId;
+        this.initialized = false;
+        this.lastError = '0';
+        this.ENDPOINTS = {
+          'base_url':`/api/lms/scorm/${this.courseId}`
+        }
+      }
+
+      async makeRequest(path, data = {}) {
+        try {
+          const res = await fetch(path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(data)
+          });
+          return await res.json();
+        } catch (e) {
+          console.error('SCORM API request failed:', e);
+          this.lastError = '101';
+          return { result: 'false', errorCode: '101' };
+        }
+      }
+
+      async LMSInitialize(_ = "") {
+          console.log('--Initialize--');
+        const r = await this.makeRequest(`${this.ENDPOINTS.base_url}/initialize`);
+        this.initialized = (r.result === 'true');
+        this.lastError = r.errorCode || '0';
+        return this.initialized ? 'true' : 'false';
+      }
+
+      // frontend:
+      LMSGetValue(element) {
+          console.log("--Get Value--", element);
+          try {
+              const xhr = new XMLHttpRequest();
+              xhr.open("POST", `${this.ENDPOINTS.base_url}/get_value`, false); // false = sync
+              xhr.setRequestHeader("Content-Type", "application/json");
+              xhr.send(JSON.stringify({ element: element }));
+
+              if (xhr.status === 200) {
+                  const data = JSON.parse(xhr.responseText);
+                  const result = data.result || "";
+                  console.log("Returned:", result);
+                  return result;
+              } else {
+                  console.error("SCORM GetValue error:", xhr.statusText);
+                  this.lastError = "101";
+                  return "";
+              }
+          } catch (e) {
+              console.error("SCORM GetValue failed:", e);
+              this.lastError = "101";
+              return "";
+          }
+      }
+
+      async LMSSetValue(element, value) {
+          console.log('--Set Value--');
+          console.log(element);
+          console.log(value);
+        if (!this.initialized) { this.lastError = '132'; return 'false'; }
+        const r = await this.makeRequest(`${this.ENDPOINTS.base_url}/set_value`, { element, value });
+        this.lastError = r.errorCode || '0';
+        return r.result === 'true' ? 'true' : 'false';
+      }
+
+      async LMSCommit(_ = "") {
+          console.log('--Commit--');
+        if (!this.initialized) { this.lastError = '132'; return 'false'; }
+        const r = await this.makeRequest(`${this.ENDPOINTS.base_url}/commit`);
+        this.lastError = r.errorCode || '0';
+        return r.result === 'true' ? 'true' : 'false';
+      }
+
+      async LMSFinish(_ = "") {
+          console.log('--Finish--');
+        if (!this.initialized) { this.lastError = '132'; return 'false'; }
+        await this.LMSCommit();
+        const r = await this.makeRequest(`${this.ENDPOINTS.base_url}/finish`);
+        this.initialized = false;
+        this.lastError = r.errorCode || '0';
+        return r.result === 'true' ? 'true' : 'false';
+      }
+
+      LMSGetLastError() { return this.lastError; }
+
+      async LMSGetErrorString(code) {
+        const r = await this.makeRequest(`${this.ENDPOINTS.base_url}/get_error_string`, { errorCode: code });
+        return r.result || '';
+      }
+
+      async LMSGetDiagnostic(code) {
+        const r = await this.makeRequest(`${this.ENDPOINTS.base_url}/get_diagnostic`, { errorCode: code });
+        return r.result || '';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const courseId = parseInt("{{ course_id|int }}");
+      const scormAPI = new ScormAPI(courseId);
+      window.API = scormAPI;
+      // Initialize immediately
+      await scormAPI.LMSInitialize("");
+
+      // Periodic autosave
+      setInterval(() => { if (scormAPI.initialized) scormAPI.LMSCommit(""); }, 30000);
+
+      // Save on unload
+      window.addEventListener('beforeunload', () => {
+        if (scormAPI.initialized) { navigator.sendBeacon(`${this.ENDPOINTS.base_url}/commit`, JSON.stringify({})); }
+      });
+
+      // Hide loader once all done
+      document.getElementById('loading').style.display = 'none';
+    });
+  </script> 
+</body>
+</html>

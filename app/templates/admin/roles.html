@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block title %} Roles {% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="w-50 mx-auto">
+        <div class="card mb-3">
+            <div class="card-header text-center">
+                <h5>Insert Roles</h5>                
+            </div>
+            <div class="card-body">
+            <!-- Add Role Form -->
+                <form method="POST" action="{{ url_for('admin.roles') }}">
+                    {{ form.hidden_tag() }}
+                    <div class="d-grid gap-2">
+                        <div class="form-floating mb-3">
+                            {{ form.name(class="form-control", placeholder="Enter role name") }}
+                            <label for="role_name">Role Name</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            {{ form.description(class="form-control", placeholder="Enter description") }}
+                            <label for="role_description">Role Description</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary ml-auto">Add Role</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+
+    <!-- Search Box -->
+     {% if roles %}
+    <div class="mb-3">
+        <input type="text" id="searchInput" class="form-control" placeholder="Search roles...">
+    </div>
+
+    <!-- Roles Table -->
+    <table id="rolesTable" class="table table-striped table-bordered align-middle">
+        <thead class="table-light">
+            <tr>
+                <th onclick="sortTable(0)" style="cursor:pointer">S.No</th>
+                <th onclick="sortTable(1)" style="cursor:pointer">Role Name</th>
+                <th onclick="sortTable(2)" style="cursor:pointer">Description</th>
+            </tr>
+        </thead>
+        <tbody id="rolesBody">
+            {% for role in roles %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ role.name }}</td>
+                <td>{{ role.description }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    <!-- Pagination -->
+    <nav>
+        <ul class="pagination" id="pagination"></ul>
+    </nav>
+</div>
+
+<script>
+// --- SEARCH ---
+document.getElementById("searchInput").addEventListener("keyup", function() {
+    let filter = this.value.toLowerCase();
+    let rows = document.querySelectorAll("#rolesBody tr");
+    rows.forEach(row => {
+        let text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? "" : "none";
+    });
+    paginate(); // re-apply pagination after search
+});
+
+// --- SORT ---
+function sortTable(colIndex) {
+    let table = document.getElementById("rolesTable");
+    let rows = Array.from(table.rows).slice(1); // exclude header
+    let asc = table.getAttribute("data-sort-dir") !== "asc";
+    rows.sort((a, b) => {
+        let aText = a.cells[colIndex].innerText.trim().toLowerCase();
+        let bText = b.cells[colIndex].innerText.trim().toLowerCase();
+        return asc ? aText.localeCompare(bText, 'en', {numeric:true}) : bText.localeCompare(aText, 'en', {numeric:true});
+    });
+    rows.forEach(row => table.tBodies[0].appendChild(row));
+    table.setAttribute("data-sort-dir", asc ? "asc" : "desc");
+    paginate(); // reapply pagination
+}
+
+// --- PAGINATION ---
+const rowsPerPage = 5;
+let currentPage = 1;
+
+function paginate() {
+    let rows = Array.from(document.querySelectorAll("#rolesBody tr")).filter(r => r.style.display !== "none");
+    let totalPages = Math.ceil(rows.length / rowsPerPage);
+
+    // hide all rows
+    rows.forEach(r => r.style.display = "none");
+
+    // show only current page rows
+    let start = (currentPage - 1) * rowsPerPage;
+    let end = start + rowsPerPage;
+    rows.slice(start, end).forEach(r => r.style.display = "");
+
+    // pagination controls
+    let pagination = document.getElementById("pagination");
+    pagination.innerHTML = "";
+    if (totalPages > 1) {
+        for (let i = 1; i <= totalPages; i++) {
+            let li = document.createElement("li");
+            li.className = "page-item " + (i === currentPage ? "active" : "");
+            let a = document.createElement("a");
+            a.className = "page-link";
+            a.href = "#";
+            a.innerText = i;
+            a.onclick = (e) => {
+                e.preventDefault();
+                currentPage = i;
+                paginate();
+            };
+            li.appendChild(a);
+            pagination.appendChild(li);
+        }
+    }
+}
+
+// Initialize pagination
+paginate();
+</script>
+{% endblock %}

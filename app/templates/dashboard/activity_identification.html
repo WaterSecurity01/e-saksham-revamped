@@ -1,0 +1,790 @@
+{% extends 'base.html' %}
+{% block title %} Identify Activity{% endblock %}
+{% block content %}
+<div class="d-flex bg-primary py-2 text-white justify-content-center">Activity Identification on Yuktdhara</div>
+
+<!-- Applied Filters Row -->
+<div class="d-flex justify-content-between align-items-center py-2 px-3 bg-light border-bottom" id="applied-filters-row">
+    <div class="d-flex flex-wrap gap-1 align-items-center">
+        <span class="text-muted me-2">Applied Filters:</span>
+        <div id="applied-filters-container" class="d-flex flex-wrap gap-1">
+            <!-- Filter badges will be inserted here -->
+        </div>
+        <span id="no-filters-text" class="text-muted fst-italic">None</span>
+    </div>
+    <button type="button" class="btn btn-outline-danger btn-sm" id="clear-all-filters">
+        <i class="fas fa-times"></i> Clear All
+    </button>
+</div>
+
+<div class="d-flex"></div>
+<div class="d-flex justify-content-between">
+    <div class="card flex-fill m-2 pb-3">
+        <div class="card-body px-2">
+            <div class="d-grid gap-2">
+                <div class="fw-bold text-center">Nature of Work</div>
+                <div class="btn-group" role="group" aria-label="Nature of Work selection">
+                    {% for item in nature_of_work %}
+                    <input type="radio" class="btn-check" name="nature_of_works" id="btn{{item.short_name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="nature_of_works" data-label="{{item.short_name}}">
+                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.short_name}}{{loop.index}}">{{ item.short_name}}</label>
+                    {% endfor %}
+                </div>
+                <div class="fw-bold text-center">Master Category</div>
+                <div class="btn-group" role="group" aria-label="Master Category selection" id="categories-container">
+                    {% for item in categories %}
+                    <input type="radio" class="btn-check" name="categories" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="categories" data-label="{{item.name}}">
+                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.name}}{{loop.index}}">{{ item.name}}</label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card flex-fill m-2">
+        <div class="card-body px-2">
+            <div class="d-grid gap-2">
+                <div class="fw-bold text-center">Select Ridge</div>
+                <div class="btn-group" role="group" aria-label="Ridge selection">
+                    {% for item in ridges %}
+                    <input type="radio" class="btn-check" name="ridges" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="ridges" data-label="{{item.name}}">
+                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.name}}{{loop.index}}">{{ item.name }}</label>
+                    {% endfor %}
+                </div>
+                <div class="fw-bold text-center">Select Cluster</div>
+                <div class="btn-group" role="group" aria-label="Cluster selection">
+                    {% for item in clusters %}
+                    <input type="radio" class="btn-check" name="clusters" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="clusters" data-label="{{item.name}}">
+                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.name}}{{loop.index}}">{{ item.name }}</label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>    
+    <div class="card flex-fill m-2">
+        <div class="card-body px-2">
+            <div class="d-grid gap-2">
+                <div class="fw-bold text-center">Slope %</div>
+                <div class="btn-group" role="group" aria-label="Slope selection">
+                    {% for item in slopes %}
+                    <input type="radio" class="btn-check" name="slopes" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="slopes" data-label="{{item.name}}">
+                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.name}}{{loop.index}}">{{ item.name }}</label>
+                    {% endfor %}
+                </div>
+                <div class="fw-bold text-center">Water Works</div>
+                <div class="btn-group" role="group" aria-label="Water Works selection">
+                    {% for item in water_works %}
+                    <input type="radio" class="btn-check" name="water_works" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="water_works" data-label="{{item.name}}">
+                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.name}}{{loop.index}}">{{ item.name}}</label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card flex-fill m-2">
+        <div class="card-body px-2">
+            <div class="d-grid gap-2">
+                <div class="fw-bold text-center">Beneficiary Type</div>
+                <div class="btn-group" role="group" aria-label="Beneficiary Type selection" id="beneficiaries-container">
+                    {% for item in beneficiaries %}
+                    <input type="radio" class="btn-check" name="beneficiaries" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="beneficiaries" data-label="{{item.name | capitalize}}">
+                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+                    {% endfor %}
+                </div>
+                <div class="fw-bold text-center">Activity Type</div>
+                <div class="btn-group" role="group" aria-label="Activity Type selection" id="activities-container">
+                    {% for item in activities %}
+                    <input type="radio" class="btn-check" name="activity_types" id="btn{{item.short_name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="activity_types" data-label="{{item.short_name | capitalize}}">
+                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.short_name}}{{loop.index}}">{{ item.short_name | capitalize}}</label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="d-flex justify-content-between align-items-stretch" id="second-row"> 
+    <div class="card flex-fill mx-2 d-flex flex-column scrollable-card">
+        <div class="card-header text-center">
+            <div class="d-flex justify-content-between align-items-center">
+                <span>{{ "Land Type" }}</span>
+                <span class="perfect-circle bg-dark text-white fs-7 p-1" id="land-types-count">{{land_types|length}}</span>
+            </div>
+        </div>
+        <div class="card-body overflow-auto flex-fill scrollable-body">
+            <div class="d-grid gap-2" id="land-types-container">
+            {% for item in land_types %}
+            <input type="radio" class="btn-check" name="location_specifics" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="location_specifics" data-label="{{item.name | capitalize}}">
+            <label class="btn btn-outline-dark btn-sm text-center text-wrap" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+            {% endfor %}
+            </div>
+        </div>
+    </div>   
+    <div class="card flex-fill mx-2 d-flex flex-column scrollable-card">
+        <div class="card-header text-center">
+            <div class="d-flex justify-content-between align-items-center">
+                <span>{{ "Major Scheduled Category" }}</span>
+                <span class="perfect-circle bg-dark text-white fs-7 p-1" id="major-scheduled-count">{{major_scheduled_category|length}}</span>
+            </div>
+        </div>
+        <div class="card-body overflow-auto flex-fill scrollable-body">
+            <div class="d-grid gap-2" id="major-scheduled-container">
+            {% for item in major_scheduled_category %}
+            <input type="radio" class="btn-check" name="major_scheduled_category" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="major_scheduled_category" data-label="{{item.name | capitalize}}">
+            <label class="btn btn-outline-dark btn-sm text-center text-wrap" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+            {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="card flex-fill mx-2 d-flex flex-column scrollable-card">
+        <div class="card-header text-center">
+            <div class="d-flex justify-content-between align-items-center">
+                <span>{{ "Work Type" }}</span>
+                <span class="perfect-circle bg-dark text-white fs-7 p-1" id="work-types-count">{{work_types|length}}</span>
+            </div>
+        </div>
+        <div class="card-body overflow-auto flex-fill scrollable-body">
+            <div class="d-grid gap-2" id="work-types-container">
+            {% for item in work_types %}
+            <input type="radio" class="btn-check" name="work_types" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="work_types" data-label="{{item.name | capitalize}}">
+            <label class="btn btn-outline-dark btn-sm text-center text-wrap" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+            {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="card flex-fill mx-2 d-flex flex-column scrollable-card">
+        <div class="card-header text-center">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>{{ "Permissible Work"}}</div>
+                <div class="perfect-circle bg-dark text-white fs-7 p-1" id="permissible-works-count">{{permissible_works|length}}</div>
+            </div>
+        </div>
+        <div class="card-body overflow-auto flex-fill scrollable-body">
+            <div class="d-grid gap-2" id="permissible-works-container">
+            {% for item in permissible_works %}
+                <input type="radio" class="btn-check" name="permissible_works" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="permissible_works" data-label="{{item.name | capitalize}}">
+                <label class="btn btn-outline-dark btn-sm text-center text-wrap" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+            {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="card border border-2 border-primary mx-2 d-flex flex-column yuktdhara-card" id="yuktdhara-card">
+        <div class="card-header text-center bg-primary text-white">Yuktdhara Dropdown Selections</div>
+        <div class="card-body d-flex flex-column">
+            <div class="d-grid gap-2 flex-fill">
+                <div class="form-floating">
+                    <textarea name="gaw" id="gaw" class="form-control auto-resize" placeholder="GAW/Non-GAW" readonly style="resize: none; overflow: hidden; min-height: 38px;"></textarea>
+                    <label for="gaw" class="fs-7 ">GAW/Non-GAW</label>
+                </div>
+                <div class="form-floating">
+                    <textarea name="master_catgory" id="master_catgory" class="form-control auto-resize" placeholder="Master Category" readonly style="resize: none; overflow: hidden; min-height: 38px;"></textarea>
+                    <label for="master_catgory" class="fs-7 ">Master Category</label>
+                </div>
+                <div class="form-floating">
+                    <textarea name="major_scheduled_category" id="major_scheduled_category" class="form-control auto-resize" placeholder="Major Scheduled Category" readonly style="resize: none; overflow: hidden; min-height: 38px;"></textarea>
+                    <label for="major_scheduled_category" class="fs-7 ">Major Scheduled Category</label>
+                </div>
+                <div class="form-floating">
+                    <textarea name="beneficiary_type" id="beneficiary_type" class="form-control auto-resize" placeholder="Beneficiary Type" readonly style="resize: none; overflow: hidden; min-height: 38px;"></textarea>
+                    <label for="beneficiary_type" class="fs-7 ">Beneficiary Type</label>
+                </div>
+                <div class="form-floating">
+                    <textarea name="activity_type" id="activity_type" class="form-control auto-resize" placeholder="Activity Type" readonly style="resize: none; overflow: hidden; min-height: 38px;"></textarea>
+                    <label for="activity_type" class="fs-7 ">Activity Type</label>
+                </div>
+                <div class="form-floating">
+                    <textarea name="work_type" id="work_type" class="form-control auto-resize" placeholder="Work Type" readonly style="resize: none; overflow: hidden; min-height: 38px;"></textarea>
+                    <label for="work_type" class="fs-7 ">Work Type</label>
+                </div>
+                <div class="form-floating">
+                    <textarea name="permissible_work" id="permissible_work" class="form-control auto-resize" placeholder="Permissible Works" readonly style="resize: none; overflow: hidden; min-height: 38px;"></textarea>
+                    <label for="permissible_work" class="fs-7 ">Permissible Works</label>
+                </div>
+            </div>
+        </div>
+    </div> 
+</div>
+
+<style>
+/* Loader overlay */
+#loaderOverlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.75);
+    z-index: 2000;
+    backdrop-filter: blur(1px);
+}
+#loaderOverlay.show {
+    display: flex;
+}
+.loader-spinner {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    border: .35rem solid #e9ecef;
+    border-top-color: #0d6efd;
+    animation: spin .8s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Disabled radio button styling */
+.btn-check:disabled + .btn {
+    opacity: 0.4;
+    pointer-events: none;
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    color: #6c757d;
+}
+
+/* Auto-resize textareas */
+.auto-resize {
+    field-sizing: content;
+}
+
+/* Filter badges */
+.filter-badge {
+    background-color: var(--bs-secondary);
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.filter-badge:hover {
+    background-color: var(--bs-danger);
+}
+
+.filter-badge .remove-filter {
+    background: none;
+    border: none;
+    color: white;
+    padding: 0;
+    margin-left: 0.25rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+/* Text centering for labels */
+.btn-group .btn {
+    text-align: center !important;
+}
+
+/* Applied filters row height matching */
+#applied-filters-row {
+    min-height: 50px;
+    max-height: 50px;
+}
+
+/* Second row layout improvements */
+#second-row {
+    min-height: 400px; /* Minimum height for the row */
+}
+
+/* Yuktdhara card improvements */
+.yuktdhara-card {
+    width: 300px;
+    min-width: 300px;
+    max-width: 350px; /* Allow some expansion if content needs it */
+}
+
+/* Scrollable cards specific styling */
+.scrollable-card {
+    max-height: 600px; /* Maximum height for scrollable cards */
+}
+
+.scrollable-card .scrollable-body {
+    max-height: 450px; /* Maximum height for the scrollable body */
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Ensure Yuktdhara card grows with content */
+.yuktdhara-card .card-body {
+    min-height: 300px; /* Minimum content area */
+}
+
+/* Hide scrollbar while maintaining scroll functionality */
+.scrollable-body {
+    /* Hide scrollbar for Webkit browsers (Chrome, Safari, Edge) */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.scrollable-body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none; /* Hide scrollbar for Webkit browsers */
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .yuktdhara-card {
+        width: 280px;
+        min-width: 280px;
+    }
+}
+
+@media (max-width: 992px) {
+    #second-row {
+        flex-wrap: wrap;
+    }
+    
+    .yuktdhara-card {
+        width: 100%;
+        max-width: none;
+        order: -1; /* Move Yuktdhara card to top on smaller screens */
+    }
+}
+</style>
+
+<!-- Loader markup -->
+<div id="loaderOverlay" role="status" aria-live="polite" aria-label="Loading">
+    <div class="loader-spinner" aria-hidden="true"></div>
+    <div class="ms-3 fw-semibold text-primary">Filtering…</div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // New filter endpoint
+    const FILTER_ENDPOINT = '/dashboard/activity_identification/filter';
+
+    // Map filter groups to the display fields in "Yuktdhara Dropdown Selections"
+    const GROUP_TO_DISPLAY_FIELD = {
+        nature_of_works: 'gaw',
+        categories: 'master_catgory',
+        major_scheduled_category: 'major_scheduled_category',
+        beneficiaries: 'beneficiary_type',
+        activity_types: 'activity_type',
+        work_types: 'work_type',
+        permissible_works: 'permissible_work'
+    };
+
+    // Map groups to their container elements for dynamic updates
+    const GROUP_TO_CONTAINER = {
+        categories: 'categories-container',
+        major_scheduled_category: 'major-scheduled-container',
+        beneficiaries: 'beneficiaries-container',
+        activity_types: 'activities-container',
+        work_types: 'work-types-container',
+        permissible_works: 'permissible-works-container',
+        location_specifics: 'land-types-container'
+    };
+
+    // Map groups to their count elements
+    const GROUP_TO_COUNT = {
+        major_scheduled_category: 'major-scheduled-count',
+        work_types: 'work-types-count',
+        permissible_works: 'permissible-works-count',
+        location_specifics: 'land-types-count'
+    };
+
+    // Initialize the display fields with "?"
+    Object.values(GROUP_TO_DISPLAY_FIELD).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '?';
+    });
+
+    // Auto-resize textareas
+    function autoResize(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.max(38, textarea.scrollHeight) + 'px';
+    }
+
+    // Initialize auto-resize for all textareas
+    document.querySelectorAll('.auto-resize').forEach(textarea => {
+        autoResize(textarea);
+        textarea.addEventListener('input', () => autoResize(textarea));
+    });
+
+    // Loader helpers
+    const overlay = document.getElementById('loaderOverlay');
+    let inflight = 0;
+
+    function showLoader() {
+        inflight++;
+        if (inflight === 1) {
+            overlay.classList.add('show');
+            document.body.setAttribute('aria-busy', 'true');
+        }
+    }
+    
+    function hideLoader() {
+        inflight = Math.max(0, inflight - 1);
+        if (inflight === 0) {
+            overlay.classList.remove('show');
+            document.body.removeAttribute('aria-busy');
+        }
+    }
+
+    // Helper to get the label text for a given input
+    const getLabelText = (input) => {
+        return input.getAttribute('data-label') || '';
+    };
+
+    // Applied filters management
+    const appliedFiltersContainer = document.getElementById('applied-filters-container');
+    const noFiltersText = document.getElementById('no-filters-text');
+    const clearAllBtn = document.getElementById('clear-all-filters');
+
+    // Update applied filters display
+    function updateAppliedFilters(selections) {
+        appliedFiltersContainer.innerHTML = '';
+        let hasFilters = false;
+
+        Object.entries(selections).forEach(([group, data]) => {
+            if (data.ids.length > 0) {
+                hasFilters = true;
+                data.labels.forEach((label, index) => {
+                    const badge = document.createElement('span');
+                    badge.className = 'filter-badge';
+                    badge.innerHTML = `
+                        ${label}
+                        <button type="button" class="remove-filter" data-group="${group}" data-id="${data.ids[index]}" aria-label="Remove ${label} filter">
+                            ×
+                        </button>
+                    `;
+                    appliedFiltersContainer.appendChild(badge);
+                });
+            }
+        });
+
+        noFiltersText.style.display = hasFilters ? 'none' : 'inline';
+    }
+
+    // Handle individual filter removal
+    appliedFiltersContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-filter')) {
+            const group = e.target.getAttribute('data-group');
+            const id = e.target.getAttribute('data-id');
+            
+            // Find and uncheck the corresponding radio button
+            const radioBtn = document.querySelector(`input[data-group="${group}"][data-id="${id}"]`);
+            if (radioBtn) {
+                radioBtn.checked = false;
+                onChange();
+            }
+        }
+    });
+
+    // Handle clear all filters
+    clearAllBtn.addEventListener('click', () => {
+        document.querySelectorAll('input.btn-check[data-group]').forEach(input => {
+            input.checked = false;
+        });
+        onChange();
+    });
+
+    // Collect current selection state across all groups
+    const collectSelections = () => {
+        const result = {};
+        const radios = document.querySelectorAll('input.btn-check[data-group]');
+        
+        // First pass: initialize all groups
+        radios.forEach(input => {
+            const group = input.getAttribute('data-group');
+            if (!result[group]) {
+                result[group] = { ids: [], labels: [] };
+            }
+        });
+        
+        // Second pass: collect checked items (only one per group for radio buttons)
+        radios.forEach(input => {
+            const group = input.getAttribute('data-group');
+            if (input.checked) {
+                result[group].ids = [parseInt(input.getAttribute('data-id'))];
+                result[group].labels = [getLabelText(input)];
+            }
+        });
+        
+        return result;
+    };
+
+    // Update the right-hand "Yuktdhara Dropdown Selections" fields
+    const updateDisplayFields = (selections, autoFillData = {}) => {
+        Object.entries(GROUP_TO_DISPLAY_FIELD).forEach(([group, fieldId]) => {
+            const field = document.getElementById(fieldId);
+            if (!field) return;
+            
+            let value = '?';
+            const labels = (selections[group]?.labels || []);
+            
+            // Use selected value if available
+            if (labels.length > 0) {
+                value = labels[0]; // Only one value for radio buttons
+            }
+            // Otherwise use auto-fill if available
+            else if (autoFillData[group]) {
+                value = autoFillData[group].name;
+            }
+            
+            field.value = value;
+            autoResize(field);
+        });
+    };
+
+    // Update dynamic radio buttons and counts
+    const updateDynamicElements = (data) => {
+        // Update categories
+        if (data.categories) {
+            updateRadioGroup('categories', data.categories, 'name');
+        }
+        
+        // Update major scheduled category
+        if (data.major_scheduled_category) {
+            updateRadioGroup('major_scheduled_category', data.major_scheduled_category, 'name');
+            updateCount('major-scheduled-count', data.major_scheduled_category_count);
+        }
+        
+        // Update beneficiaries
+        if (data.beneficiaries) {
+            updateRadioGroup('beneficiaries', data.beneficiaries, 'name');
+        }
+        
+        // Update activities (activity types)
+        if (data.activity_types) {
+            updateRadioGroup('activity_types', data.activity_types, 'short_name');
+        }
+        
+        // Update work types
+        if (data.work_types) {
+            updateRadioGroup('work_types', data.work_types, 'name');
+            updateCount('work-types-count', data.work_types_count);
+        }
+        
+        // Update permissible works
+        if (data.permissible_works) {
+            updateRadioGroup('permissible_works', data.permissible_works, 'name');
+            updateCount('permissible-works-count', data.permissible_works_count);
+        }
+
+        // Update location specifics (land types)
+        if (data.location_specifics) {
+            updateRadioGroup('location_specifics', data.location_specifics, 'name');
+            updateCount('land-types-count', data.location_specifics_count);
+        }
+    };
+
+    // Auto-select if exactly one enabled option remains in any group (frontend fallback)
+    const autoSelectSingleFromDOM = () => {
+        let changed = false;
+        Object.keys(GROUP_TO_CONTAINER).forEach(group => {
+            const enabled = Array.from(document.querySelectorAll(`input.btn-check[data-group="${group}"]`)).filter(r => !r.disabled);
+            const current = document.querySelector(`input.btn-check[data-group="${group}"]:checked`);
+            if (!current && enabled.length === 1) {
+                enabled[0].checked = true;
+                changed = true;
+            }
+        });
+
+        if (changed) {
+            const selections = collectSelections();
+            updateDisplayFields(selections);
+            updateAppliedFilters(selections);
+            debouncedFilter(selections);
+        }
+    };
+
+    // Helper to update a radio button group
+    const updateRadioGroup = (group, items, labelField) => {
+        const container = document.getElementById(GROUP_TO_CONTAINER[group]);
+        if (!container) return;
+
+        // Store currently selected value
+        let currentSelection = null;
+        const existingInput = container.querySelector('input.btn-check:checked');
+        if (existingInput) {
+            currentSelection = parseInt(existingInput.getAttribute('data-id'));
+        }
+
+        // Clear container
+        container.innerHTML = '';
+
+        // Add updated items
+        items.forEach((item, index) => {
+            const inputId = `btn${item[labelField]}${index}_${Date.now()}`;
+            const isChecked = currentSelection === item.id;
+            const isDisabled = item.disabled || false;
+            
+            const input = document.createElement('input');
+            input.type = 'radio';
+            input.className = 'btn-check';
+            input.name = group;
+            input.id = inputId;
+            input.autocomplete = 'off';
+            input.value = item.id;
+            input.setAttribute('data-id', item.id);
+            input.setAttribute('data-group', group);
+            input.setAttribute('data-label', item[labelField].charAt(0).toUpperCase() + item[labelField].slice(1));
+            input.checked = isChecked && !isDisabled;
+            input.disabled = isDisabled;
+
+            const label = document.createElement('label');
+            label.className = 'btn btn-outline-dark btn-sm text-center text-wrap';
+            label.setAttribute('for', inputId);
+            label.textContent = item[labelField].charAt(0).toUpperCase() + item[labelField].slice(1);
+
+            container.appendChild(input);
+            container.appendChild(label);
+        });
+    };
+
+    // Helper to update count badges
+    const updateCount = (countId, count) => {
+        const countEl = document.getElementById(countId);
+        if (countEl) {
+            countEl.textContent = count || 0;
+        }
+    };
+
+    // Handle auto-fill for single remaining options
+    const handleAutoFill = (autoFillData) => {
+        Object.entries(autoFillData).forEach(([group, data]) => {
+            // Check if this group doesn't already have a selection
+            const currentRadio = document.querySelector(`input[data-group="${group}"]:checked`);
+            if (!currentRadio) {
+                // Find the radio button for this auto-fill option and select it
+                const radioToSelect = document.querySelector(`input[data-group="${group}"][data-id="${data.id}"]`);
+                if (radioToSelect && !radioToSelect.disabled) {
+                    radioToSelect.checked = true;
+                }
+            }
+        });
+    };
+
+    // Debounce to avoid flooding requests on quick clicks
+    let debounceTimer = null;
+    let currentAbort = null;
+
+    const debouncedFilter = (selections) => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+            try {
+                // Prepare data for POST request - create a clean object
+                const filterData = {};
+                
+                // Only add groups that have selections
+                Object.keys(selections).forEach(group => {
+                    const ids = selections[group].ids;
+                    if (ids && ids.length > 0) {
+                        filterData[group] = ids;
+                    }
+                });
+
+                // Abort previous fetch if still running
+                if (currentAbort) currentAbort.abort();
+                currentAbort = new AbortController();
+
+                showLoader();
+
+                const response = await fetch(FILTER_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    credentials: 'same-origin',
+                    signal: currentAbort.signal,
+                    body: JSON.stringify(filterData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        updateDynamicElements(result.data);
+                        
+                        // Prefer backend-provided auto-fill, otherwise fallback to DOM-based check
+                        const autoFill = result.data.auto_fill;
+                        if (autoFill && Object.keys(autoFill).length > 0) {
+                            setTimeout(() => {
+                                handleAutoFill(autoFill);
+                                const updatedSelections = collectSelections();
+                                updateDisplayFields(updatedSelections, autoFill);
+                                updateAppliedFilters(updatedSelections);
+                            }, 100);
+                        } else {
+                            // Frontend-only fallback when backend doesn't provide auto_fill
+                            setTimeout(() => autoSelectSingleFromDOM(), 50);
+                        }
+                    } else {
+                        console.error('Filter error:', result.error);
+                    }
+                } else {
+                    console.error('HTTP error:', response.status);
+                }
+
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    console.error('Fetch error:', error);
+                }
+            } finally {
+                hideLoader();
+            }
+        }, 300);
+    };
+
+    // Handle radio button changes
+    const onChange = () => {
+        const selections = collectSelections();
+        updateDisplayFields(selections);
+        updateAppliedFilters(selections);
+        debouncedFilter(selections);
+    };
+
+    // Enable radio unselect on re-click (handles both input and label clicks)
+    document.addEventListener('pointerdown', (evt) => {
+        let input = null;
+        if (evt.target.matches('input.btn-check[data-group]')) {
+            input = evt.target;
+        } else if (evt.target.matches('label[for]')) {
+            const forId = evt.target.getAttribute('for');
+            const el = document.getElementById(forId);
+            if (el && el.matches('input.btn-check[data-group]')) input = el;
+        }
+        if (input && input.type === 'radio' && input.checked && !input.disabled) {
+            input.dataset.wasChecked = 'true';
+        }
+    });
+
+    document.addEventListener('click', (evt) => {
+        let input = null;
+        if (evt.target.matches('input.btn-check[data-group]')) {
+            input = evt.target;
+        } else if (evt.target.matches('label[for]')) {
+            const forId = evt.target.getAttribute('for');
+            const el = document.getElementById(forId);
+            if (el && el.matches('input.btn-check[data-group]')) input = el;
+        }
+        if (input && input.dataset.wasChecked === 'true') {
+            // Uncheck and propagate change
+            input.checked = false;
+            delete input.dataset.wasChecked;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            evt.preventDefault();
+        } else if (input) {
+            delete input.dataset.wasChecked;
+        }
+    });
+
+    // Set up listeners on all filter radio buttons (using event delegation)
+    document.addEventListener('change', (evt) => {
+        const target = evt.target;
+        if (target && target.matches('input.btn-check[data-group]')) {
+            onChange();
+        }
+    });
+
+    // Initial sync
+    const initialSelections = collectSelections();
+    updateDisplayFields(initialSelections);
+    updateAppliedFilters(initialSelections);
+});
+</script>
+{% endblock %}

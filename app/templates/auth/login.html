@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %} Login {% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">Login</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.username.label(class="form-label") }}
+                        {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else "")) }}
+                        {% if form.username.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.username.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.password.label(class="form-label") }}
+                        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else "")) }}
+                        {% if form.password.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.password.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.remember_me(class="form-check-input") }}
+                        {{ form.remember_me.label(class="form-check-label") }}
+                    </div>
+                    <div class="my-3 d-flex justify-content-center align-items-center gap-2">
+                        <strong><label class="mb-0">Solve: {{captcha_question}} = ?</label></strong>
+                        {{ form.captcha_answer(class="form-control w-auto") }}<br>
+                        <div class="invalid-feedback">Please solve the captcha.</div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-box-arrow-in-right"></i> Login
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <p class="mb-0">Don't have an account? 
+                    <a href="{{ url_for('auth.register') }}">Register here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    (function(){
+
+        // Get form contorls for validation
+        const form = document.querySelector("form");
+
+        // Fetch public key on page load (async/await)
+        async function fetchPublicKey() {
+            try {
+                const response = await fetch('/api/decrypt_keys');
+                if (!response.ok) throw new Error('Failed to fetch encryption keys');
+                const data = await response.json();
+
+                if (!data.publicKey) throw new Error('Public key missing in response');
+                RSA_PUBLIC_KEY = data.publicKey;
+                keyLoaded = true;
+                console.log("RSA Public key loaded");
+            } catch (error) {
+                console.error("Error fetching encryption keys:", error);
+                keyLoaded = false;
+            }
+        }
+
+        // Encrypt a single password
+        function encryptPasswordRSA(plaintext) {
+            if (!RSA_PUBLIC_KEY) throw new Error("Public key not loaded.");
+            const encryptor = new JSEncrypt();
+            encryptor.setPublicKey(RSA_PUBLIC_KEY);
+            return encryptor.encrypt(plaintext);
+        }
+
+        // Encrypt all password fields before submit
+        function encryptAllPasswordFieldsRSA() {
+            const passwordFields = form.querySelectorAll('input[type="password"]');
+            passwordFields.forEach(field => {
+                if (field.dataset.encrypted === "true") return; // prevent double encryption
+                if (field.value.trim() !== "") {
+                    try {
+                        field.value = encryptPasswordRSA(field.value);
+                        field.dataset.encrypted = "true"; // mark as encrypted
+                    } catch (err) {
+                        console.error("Encryption failed:", err);
+                        throw err;
+                    }
+                }
+            });
+        }
+
+        // RSA encryption on Submit
+        form.addEventListener("submit", function (event) {
+            try {
+                encryptAllPasswordFieldsRSA();
+                form.submit();
+            } catch (error) {
+                console.error("Encryption failed:", err);
+                    event.preventDefault(); // stop submission if encryption fails
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', ()=>{
+            fetchPublicKey();
+        });
+
+    })();
+</script>
+{% endblock %}

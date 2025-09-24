@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--Links-->
+    <link rel="stylesheet" href="{{url_for('static', filename='css/bootstrap.min.css')}}">
+    <link rel="stylesheet" href="{{url_for('static', filename='css/style.css')}}">
+    <link rel="icon" href="{{ url_for('static', filename='assets/favicon.ico') }}">
+    <link rel="stylesheet" href="{{url_for('static', filename='fontawesome/css/all.min.css')}}">
+    <!--Scripts-->
+    <script src="{{url_for('static', filename='js/bootstrap.bundle.min.js')}}"></script>
+    <script src="{{url_for('static', filename='js/jsencrypt.min.js')}}"></script>
+
+    <title>e-Saksham - {% block title %}{% endblock %}</title>
+</head>
+<body>
+    <!-- Flash Messages -->
+     {% with messages = get_flashed_messages(with_categories=true) %}
+     {% if messages %}
+     {% for category, message in messages %}
+    <div id="flash-alert" class="fixed-top w-50 mt-5 mx-auto slide-alert-transition -translate-y-full opacity-0">
+         <div class="alert {% if category=='success' %} alert-success {% elif category=='error' %} alert-danger {% else %} alert-warning {% endif %} alert-dismissible fade show" role="alert">
+                <div class="flex align-middle">
+                    {% if category=='success' %} 
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-3 square-25" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    {% elif category=='error' %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-3 square-25" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>                    
+                    {% else %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-3 square-25" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.721-1.36 3.486 0l6.518 11.6c.75 1.335-.213 3.001-1.742 3.001H3.48c-1.53 0-2.492-1.666-1.742-3.001l6.519-11.6zM11 14a1 1 0 11-2 0 1 1 0 012 0zm-1-2a.75.75 0 01-.75-.75v-4.5a.75.75 0 011.5 0v4.5c0 .414-.336.75-.75.75z" clip-rule="evenodd"/>
+                    </svg>
+                    {% endif %}
+                    <div>
+                        <strong>{% if category=='success' %} Congratulations ! {% elif category=='error' %} Sorry! {% else %} Warning! {% endif %}</strong> {{message}}
+                    </div>                    
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+    <!--Logos-->
+    <header class="header" id="header">
+        <div class="d-flex justify-content-around pb-2">
+            <img src="{{ url_for('static', filename='assets/nregs_mord_logo.png') }}" />
+            <img src="{{ url_for('static', filename='assets/esaksham.png') }}" />
+            <!-- <div class="logo">
+                <div class="logo-circle bg-dark text-white me-2">
+                    <span class="fs-2">ई</span>
+                </div>
+                <div class="display-6 text-body-secondary">Saksham</div>
+            </div> -->
+            <!-- <a href="/esaksham/"><img src="{{ url_for('static', filename='assets/esaksham.png') }}" /></a> -->
+            <img src="{{ url_for('static', filename='assets/giz_logo.png') }}" />
+        </div>
+         <!-- Role based menu -->
+        <nav class="navbar navbar-expand-lg bg-body-tertiary">
+            <div class="container">
+                <a class="navbar-brand" href="#">
+                    <div class="logo">
+                        <div class="logo-circle-30" style="background-color: #313962; color:#33cccc;">
+                            <span class="fs-6">ई</span>
+                        </div>
+                    </div>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    {% for menu in nav_menus %}
+                    {% if not menu.parent_id %}
+                    {% if not menu.name|lower == 'profile' %}
+                        <li class="nav-item {% if menu.children %}dropdown{% endif %}">
+                        {% if menu.children %}
+                        <a class="nav-link dropdown-toggle" href="{{ menu.url }}" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ menu.name | capitalize}}
+                        </a>
+                        {% else %}
+                        <a class="nav-link" href="{{ menu.url }}">
+                            {{ menu.name | capitalize }}
+                        </a>
+                        {% endif %}
+                        {% if menu.children %}
+                            <ul class="dropdown-menu">
+                            {% for child in menu.children %}
+                                <li><a class="dropdown-item" href="{{ child.url }}">{{ child.name | capitalize}}</a></li>
+                            {% endfor %}
+                            </ul>
+                        {% endif %}
+                        </li>
+                    {% endif%}
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    {% for menu in nav_menus %}
+                    {% if not menu.parent_id %}
+                    {% if menu.name|lower == 'profile' %}
+                        <li class="nav-item {% if menu.children %}dropdown{% endif %}">
+                        {% if menu.children %}
+                        <a class="nav-link dropdown-toggle" href="{{ menu.url }}" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ menu.name | capitalize}}
+                        </a>
+                        {% else %}
+                        <a class="nav-link" href="{{ menu.url }}">
+                            {{ menu.name | capitalize }}
+                        </a>
+                        {% endif %}
+                        {% if menu.children %}
+                            <ul class="dropdown-menu">
+                            {% for child in menu.children %}
+                                <li><a class="dropdown-item" href="{{ child.url }}">{{ child.name | capitalize}}</a></li>
+                            {% endfor %}
+                            </ul>
+                        {% endif %}
+                        </li>
+                    {% endif%}
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+   
+    <!-- Title / Subtitle Header-->
+    {% if not page_title | lower == 'home'%}
+    <div style="margin-top: 10rem;">
+        <div class="text-center bg-secondary pt-3 pb-5">
+            <div class="text-white fs-2">{{page_title | capitalize}}</div>
+            <div class="text-white fs-6">{{page_subtitle | capitalize}}</div>
+            <div class="text-white fs-6">&nbsp;</div>             
+        </div>
+        <div class="bg-white mx-auto w-25 text-center text-white py-3 mt-n3 rounded-top-5">
+            <nav class="text-center" style="--bs-breadcrumb-divider: '|';" aria-label="breadcrumb">
+                <ol class="breadcrumb justify-content-center">
+                    <li class="breadcrumb-item"><a href="#">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Library</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="bg-white mx-auto w-50 text-center text-white py-3 mt-n3 rounded-top-5"></div> 
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %} 
+    <div class="bg-dark">
+        <footer class="container">
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-5 py-5 mt-5 text-light">
+                <div class="col ms-3"> 
+                    <div class="d-flex align-items-center">
+                    <a href="{{url_for('routes.index')}}" class="text-decoration-none" aria-label="Bootstrap"> 
+                        <img src="{{ url_for('static', filename='assets/brand_logo.png') }}" height="40"/>
+                    </a> 
+                    <span class="text-white ms-3">© 2025</span> 
+                    </div>
+                </div> 
+                <div class="col"> 
+                    <h5>Section</h5> 
+                    <ul class="nav flex-column"> 
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0">Home</a></li> 
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0">Features</a></li> 
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0">Pricing</a></li> 
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0">FAQs</a></li> 
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0">About</a></li> 
+                    </ul> 
+                </div> 
+                <div class="col"> 
+                    <h5>Section</h5> 
+                    <ul class="nav flex-column"> 
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0">Home</a></li> 
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0">Features</a></li> 
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0">Pricing</a></li> 
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0">FAQs</a></li> 
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0">About</a></li> 
+                    </ul> 
+                </div> 
+                <div class="col"> 
+                    <h5>Section</h5> 
+                    <ul class="nav flex-column"> 
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0">Home</a></li> 
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0">Features</a></li> 
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0">Pricing</a></li> 
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0">FAQs</a></li> 
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0">About</a></li> 
+                    </ul> 
+                </div> 
+            </div>
+        </footer>
+    </div>
+    <script>
+        // Smooth header shrink functionality
+        class ShrinkingHeader {
+            constructor() {
+                this.header = document.getElementById('header');
+                this.scrollThreshold = 100;
+                this.isScrolling = false;
+                this.lastScrollTop = 0;
+                
+                this.init();
+            }
+            
+            init() {
+                // Throttled scroll event listener
+                window.addEventListener('scroll', this.throttle(this.handleScroll.bind(this), 10));
+                
+                // Handle resize for responsive behavior
+                window.addEventListener('resize', this.throttle(this.handleResize.bind(this), 250));
+                
+                // Initial check
+                this.handleScroll();
+            }
+            
+            handleScroll() {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                // Only update if scroll position has changed significantly
+                if (Math.abs(scrollTop - this.lastScrollTop) < 5) return;
+                
+                this.lastScrollTop = scrollTop;
+                
+                // Add or remove shrunk class based on scroll position
+                if (scrollTop > this.scrollThreshold) {
+                    this.header.classList.add('shrunk');
+                } else {
+                    this.header.classList.remove('shrunk');
+                }
+            }
+            
+            handleResize() {
+                // Adjust threshold for mobile devices
+                if (window.innerWidth <= 768) {
+                    this.scrollThreshold = 50;
+                } else {
+                    this.scrollThreshold = 100;
+                }
+            }
+            
+            // Utility function to throttle events
+            throttle(func, limit) {
+                let inThrottle;
+                return function() {
+                    const args = arguments;
+                    const context = this;
+                    if (!inThrottle) {
+                        func.apply(context, args);
+                        inThrottle = true;
+                        setTimeout(() => inThrottle = false, limit);
+                    }
+                }
+            }
+        }
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const alertElement = document.getElementById('flash-alert');
+            new ShrinkingHeader();
+            // Function to hide the alert and trigger the slide-up animation
+            function hideAlert() {
+                alertElement.classList.remove('opacity-100', 'translate-y-0');
+                alertElement.classList.add('opacity-0', '-translate-y-full');
+            }
+            function showAlert() {
+                alertElement.classList.remove('-translate-y-full', 'opacity-0');
+                alertElement.classList.add('translate-y-0', 'opacity-100');
+                setTimeout(() => {
+                    hideAlert();
+                }, 10000); // 10 seconds
+            }
+
+            // Logic to check if the alert exists on the page and automatically show/hide it
+            if (alertElement) {
+                setTimeout(() => {
+                    showAlert();
+                }, 500); // half a second
+                
+            }
+        });
+    // Optional: Add smooth scroll behavior for anchor links
+        // document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        //     anchor.addEventListener('click', function (e) {
+        //         e.preventDefault();
+        //         const target = document.querySelector(this.getAttribute('href'));
+        //         if (target) {
+        //             target.scrollIntoView({
+        //                 behavior: 'smooth',
+        //                 block: 'start'
+        //             });
+        //         }
+        //     });
+        // });
+    </script>
+</body>
+</html>
