@@ -24,28 +24,6 @@ def orm_to_dict_list(queryset, fields):
     """Convert ORM objects into list of dicts with only required fields."""
     return [{f: getattr(obj, f) for f in fields} for obj in queryset]
 
-
-
-def _parse_ids(raw: Optional[str]) -> List[int]:
-    """
-    Parse a comma-separated list of ids (e.g., "1,2, 3") into a list of ints.
-    Ignores empty entries and non-numeric values safely.
-    """
-    if not raw:
-        return []
-    ids: List[int] = []
-    for token in raw.split(","):
-        token = token.strip()
-        if not token:
-            continue
-        try:
-            ids.append(int(token))
-        except ValueError:
-            # skip anything that isn't an integer
-            continue
-    return ids
-
-
 @blp.route('/activity_identification', methods=['GET'])
 def activity_identification():
 # 🔹 Dynamic dropdowns (ordered by id)
@@ -83,22 +61,16 @@ def activity_identification():
     )
 
 
+# Remove search handling from backend - simplified filter function
 @blp.route('/activity_identification/filter', methods=['POST'])
 def activity_identification_filter():
     """
-    Dynamic filtering for radio button interface:
-    - Each group can have only one selected value (or none)
-    - Always return ALL options for every dropdown
-    - Items not in filtered set → disabled=True
-    - Default: options sorted by id
-    - Exceptions (land_types, major_scheduled_category, work_types, permissible_works):
-        enabled first by id, then disabled by id
-    - Counts reflect only enabled (not disabled) items
+    Dynamic filtering - NO search handling in backend
     """
     try:
         data = request.get_json() or {}
+        # Remove search_term = data.get('search', '').strip().lower()
 
-        # 🔹 Use FK columns (not relationships) - updated for radio button single values
         filter_map = {
             "clusters": ActivityList.cluster_type,
             "categories": ActivityList.category,
@@ -112,23 +84,23 @@ def activity_identification_filter():
             "location_specifics": ActivityList.location_specifics,
             "permissible_works": ActivityList.permissible_work,
             "nature_of_works": ActivityList.nature_of_work,
-            "land_types": ActivityList.location_specifics,  # add if you have land_type FK
+            "land_types": ActivityList.location_specifics,
         }
 
-        # Apply filters - each group now has single value instead of list
+        # Apply filters
         filtered_q = db.session.query(ActivityList)
         for arg_name, column in filter_map.items():
             ids = data.get(arg_name, [])
             if ids and len(ids) > 0:
                 filtered_q = filtered_q.filter(column.in_(ids))
 
-        # Get distinct IDs from filtered query for each FK
+        # Get distinct IDs from filtered query
         filtered_ids = {
             key: set(row[0] for row in filtered_q.with_entities(col).distinct().all() if row[0] is not None)
             for key, col in filter_map.items()
         }
 
-        # Map filter names to model + display fields
+        # Model mapping
         model_map = {
             "clusters": (Cluster, ["id", "name"]),
             "categories": (Category, ["id", "name"]),
@@ -144,17 +116,18 @@ def activity_identification_filter():
             "nature_of_works": (NatureOfWork, ["id", "short_name"]),
         }
 
-        # Groups with special sorting (enabled first)
         reorder_on_disable = {"location_specifics", "major_scheduled_category", "work_types", "permissible_works"}
-
-        # Build response data
         response_data = {}
+        auto_fill_data = {}
 
         for key, (model, fields) in model_map.items():
             all_options = orm_to_dict_list(model.query.order_by(model.id).all(), fields)
-
+            
+            # NO search filtering here - removed the search logic
+            
             enriched = []
             enabled_count = 0
+            enabled_options = []
 
             for opt in all_options:
                 opt_id = opt["id"]
@@ -163,19 +136,29 @@ def activity_identification_filter():
 
                 if not is_disabled:
                     enabled_count += 1
+                    enabled_options.append(opt)
 
                 enriched.append(opt)
 
+            # Check for auto-fill (including nature_of_works now)
+            if enabled_count == 1 and not data.get(key):
+                auto_fill_data[key] = {
+                    'id': enabled_options[0]['id'],
+                    'name': enabled_options[0][fields[1]]
+                }
+
             # Sorting logic
             if key in reorder_on_disable:
-                # Enabled first, then disabled, both ordered by id
                 enriched.sort(key=lambda x: (x["disabled"], x["id"]))
             else:
-                # Pure id ordering
                 enriched.sort(key=lambda x: x["id"])
 
             response_data[key] = enriched
             response_data[f"{key}_count"] = enabled_count
+
+        # Add auto_fill to response
+        if auto_fill_data:
+            response_data["auto_fill"] = auto_fill_data
 
         return jsonify({
             "success": True,

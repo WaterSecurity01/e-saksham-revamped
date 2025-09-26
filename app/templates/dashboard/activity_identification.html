@@ -17,7 +17,7 @@
     </button>
 </div>
 
-<div class="d-flex"></div>
+<!-- FIRST ROW - Original btn-group styling -->
 <div class="d-flex justify-content-between">
     <div class="card flex-fill m-2 pb-3">
         <div class="card-body px-2">
@@ -100,6 +100,8 @@
         </div>
     </div>
 </div>
+
+<!-- SECOND ROW - Radio row styling with search -->
 <div class="d-flex justify-content-between align-items-stretch" id="second-row"> 
     <div class="card flex-fill mx-2 d-flex flex-column scrollable-card">
         <div class="card-header text-center">
@@ -108,12 +110,20 @@
                 <span class="perfect-circle bg-dark text-white fs-7 p-1" id="land-types-count">{{land_types|length}}</span>
             </div>
         </div>
-        <div class="card-body overflow-auto flex-fill scrollable-body">
-            <div class="d-grid gap-2" id="land-types-container">
-            {% for item in land_types %}
-            <input type="radio" class="btn-check" name="location_specifics" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="location_specifics" data-label="{{item.name | capitalize}}">
-            <label class="btn btn-outline-dark btn-sm text-center text-wrap" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
-            {% endfor %}
+        <div class="card-body d-flex flex-column">
+            <!-- Search input -->
+            <div class="mb-2">
+                <input type="text" class="form-control form-control-sm search-input" id="land-types-search" placeholder="Search land types..." autocomplete="off">
+            </div>
+            <div class="overflow-auto flex-fill scrollable-body">
+                <div class="d-grid gap-2" id="land-types-container">
+                {% for item in land_types %}
+                <div class="radio-row">
+                    <input type="radio" class="btn-check" name="location_specifics" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="location_specifics" data-label="{{item.name | capitalize}}">
+                    <label class="btn btn-outline-dark btn-sm full-width-label" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+                </div>
+                {% endfor %}
+                </div>
             </div>
         </div>
     </div>   
@@ -124,12 +134,20 @@
                 <span class="perfect-circle bg-dark text-white fs-7 p-1" id="major-scheduled-count">{{major_scheduled_category|length}}</span>
             </div>
         </div>
-        <div class="card-body overflow-auto flex-fill scrollable-body">
-            <div class="d-grid gap-2" id="major-scheduled-container">
-            {% for item in major_scheduled_category %}
-            <input type="radio" class="btn-check" name="major_scheduled_category" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="major_scheduled_category" data-label="{{item.name | capitalize}}">
-            <label class="btn btn-outline-dark btn-sm text-center text-wrap" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
-            {% endfor %}
+        <div class="card-body d-flex flex-column">
+            <!-- Search input -->
+            <div class="mb-2">
+                <input type="text" class="form-control form-control-sm search-input" id="major-scheduled-search" placeholder="Search categories..." autocomplete="off">
+            </div>
+            <div class="overflow-auto flex-fill scrollable-body">
+                <div class="d-grid gap-2" id="major-scheduled-container">
+                {% for item in major_scheduled_category %}
+                <div class="radio-row">
+                    <input type="radio" class="btn-check" name="major_scheduled_category" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="major_scheduled_category" data-label="{{item.name | capitalize}}">
+                    <label class="btn btn-outline-dark btn-sm full-width-label" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+                </div>
+                {% endfor %}
+                </div>
             </div>
         </div>
     </div>
@@ -140,12 +158,20 @@
                 <span class="perfect-circle bg-dark text-white fs-7 p-1" id="work-types-count">{{work_types|length}}</span>
             </div>
         </div>
-        <div class="card-body overflow-auto flex-fill scrollable-body">
-            <div class="d-grid gap-2" id="work-types-container">
-            {% for item in work_types %}
-            <input type="radio" class="btn-check" name="work_types" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="work_types" data-label="{{item.name | capitalize}}">
-            <label class="btn btn-outline-dark btn-sm text-center text-wrap" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
-            {% endfor %}
+        <div class="card-body d-flex flex-column">
+            <!-- Search input -->
+            <div class="mb-2">
+                <input type="text" class="form-control form-control-sm search-input" id="work-types-search" placeholder="Search work types..." autocomplete="off">
+            </div>
+            <div class="overflow-auto flex-fill scrollable-body">
+                <div class="d-grid gap-2" id="work-types-container">
+                {% for item in work_types %}
+                <div class="radio-row">
+                    <input type="radio" class="btn-check" name="work_types" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="work_types" data-label="{{item.name | capitalize}}">
+                    <label class="btn btn-outline-dark btn-sm full-width-label" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+                </div>
+                {% endfor %}
+                </div>
             </div>
         </div>
     </div>
@@ -156,12 +182,20 @@
                 <div class="perfect-circle bg-dark text-white fs-7 p-1" id="permissible-works-count">{{permissible_works|length}}</div>
             </div>
         </div>
-        <div class="card-body overflow-auto flex-fill scrollable-body">
-            <div class="d-grid gap-2" id="permissible-works-container">
-            {% for item in permissible_works %}
-                <input type="radio" class="btn-check" name="permissible_works" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="permissible_works" data-label="{{item.name | capitalize}}">
-                <label class="btn btn-outline-dark btn-sm text-center text-wrap" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
-            {% endfor %}
+        <div class="card-body d-flex flex-column">
+            <!-- Search input -->
+            <div class="mb-2">
+                <input type="text" class="form-control form-control-sm search-input" id="permissible-works-search" placeholder="Search permissible works..." autocomplete="off">
+            </div>
+            <div class="overflow-auto flex-fill scrollable-body">
+                <div class="d-grid gap-2" id="permissible-works-container">
+                {% for item in permissible_works %}
+                    <div class="radio-row">
+                        <input type="radio" class="btn-check" name="permissible_works" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="permissible_works" data-label="{{item.name | capitalize}}">
+                        <label class="btn btn-outline-dark btn-sm full-width-label" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+                    </div>
+                {% endfor %}
+                </div>
             </div>
         </div>
     </div>
@@ -170,32 +204,32 @@
         <div class="card-body d-flex flex-column">
             <div class="d-grid gap-2 flex-fill">
                 <div class="form-floating">
-                    <textarea name="gaw" id="gaw" class="form-control auto-resize" placeholder="GAW/Non-GAW" readonly style="resize: none; overflow: hidden; min-height: 38px;"></textarea>
-                    <label for="gaw" class="fs-7 ">GAW/Non-GAW</label>
+                    <input type="text" name="gaw" id="gaw" class="form-control scrollable-input" placeholder="GAW/Non-GAW" readonly>
+                    <label for="gaw" class="fs-7">GAW/Non-GAW</label>
                 </div>
                 <div class="form-floating">
-                    <textarea name="master_catgory" id="master_catgory" class="form-control auto-resize" placeholder="Master Category" readonly style="resize: none; overflow: hidden; min-height: 38px;"></textarea>
-                    <label for="master_catgory" class="fs-7 ">Master Category</label>
+                    <input type="text" name="master_catgory" id="master_catgory" class="form-control scrollable-input" placeholder="Master Category" readonly>
+                    <label for="master_catgory" class="fs-7">Master Category</label>
                 </div>
                 <div class="form-floating">
-                    <textarea name="major_scheduled_category" id="major_scheduled_category" class="form-control auto-resize" placeholder="Major Scheduled Category" readonly style="resize: none; overflow: hidden; min-height: 38px;"></textarea>
-                    <label for="major_scheduled_category" class="fs-7 ">Major Scheduled Category</label>
+                    <input type="text" name="major_scheduled_category" id="major_scheduled_category" class="form-control scrollable-input" placeholder="Major Scheduled Category" readonly>
+                    <label for="major_scheduled_category" class="fs-7">Major Scheduled Category</label>
                 </div>
                 <div class="form-floating">
-                    <textarea name="beneficiary_type" id="beneficiary_type" class="form-control auto-resize" placeholder="Beneficiary Type" readonly style="resize: none; overflow: hidden; min-height: 38px;"></textarea>
-                    <label for="beneficiary_type" class="fs-7 ">Beneficiary Type</label>
+                    <input type="text" name="beneficiary_type" id="beneficiary_type" class="form-control scrollable-input" placeholder="Beneficiary Type" readonly>
+                    <label for="beneficiary_type" class="fs-7">Beneficiary Type</label>
                 </div>
                 <div class="form-floating">
-                    <textarea name="activity_type" id="activity_type" class="form-control auto-resize" placeholder="Activity Type" readonly style="resize: none; overflow: hidden; min-height: 38px;"></textarea>
-                    <label for="activity_type" class="fs-7 ">Activity Type</label>
+                    <input type="text" name="activity_type" id="activity_type" class="form-control scrollable-input" placeholder="Activity Type" readonly>
+                    <label for="activity_type" class="fs-7">Activity Type</label>
                 </div>
                 <div class="form-floating">
-                    <textarea name="work_type" id="work_type" class="form-control auto-resize" placeholder="Work Type" readonly style="resize: none; overflow: hidden; min-height: 38px;"></textarea>
-                    <label for="work_type" class="fs-7 ">Work Type</label>
+                    <input type="text" name="work_type" id="work_type" class="form-control scrollable-input" placeholder="Work Type" readonly>
+                    <label for="work_type" class="fs-7">Work Type</label>
                 </div>
                 <div class="form-floating">
-                    <textarea name="permissible_work" id="permissible_work" class="form-control auto-resize" placeholder="Permissible Works" readonly style="resize: none; overflow: hidden; min-height: 38px;"></textarea>
-                    <label for="permissible_work" class="fs-7 ">Permissible Works</label>
+                    <input type="text" name="permissible_work" id="permissible_work" class="form-control scrollable-input" placeholder="Permissible Works" readonly>
+                    <label for="permissible_work" class="fs-7">Permissible Works</label>
                 </div>
             </div>
         </div>
@@ -229,6 +263,46 @@
     to { transform: rotate(360deg); }
 }
 
+/* Full width labels for second row cards */
+.full-width-label {
+    width: 100% !important;
+    text-align: center !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    min-height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* Radio row styling for second row only */
+.radio-row {
+    display: flex;
+    align-items: stretch;
+    min-height: 38px;
+}
+
+.radio-row input.btn-check {
+    flex-shrink: 0;
+    margin-right: 0;
+}
+
+.radio-row label {
+    flex: 1;
+}
+
+/* Scrollable inputs in yuktdhara card */
+.scrollable-input {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    white-space: nowrap;
+}
+
+.scrollable-input::-webkit-scrollbar {
+    display: none;
+}
+
 /* Disabled radio button styling */
 .btn-check:disabled + .btn {
     opacity: 0.4;
@@ -236,11 +310,6 @@
     background-color: #f8f9fa;
     border-color: #dee2e6;
     color: #6c757d;
-}
-
-/* Auto-resize textareas */
-.auto-resize {
-    field-sizing: content;
 }
 
 /* Filter badges */
@@ -272,7 +341,7 @@
     font-size: 0.875rem;
 }
 
-/* Text centering for labels */
+/* Text centering for first row labels */
 .btn-group .btn {
     text-align: center !important;
 }
@@ -285,43 +354,52 @@
 
 /* Second row layout improvements */
 #second-row {
-    min-height: 400px; /* Minimum height for the row */
+    min-height: 400px;
 }
 
 /* Yuktdhara card improvements */
 .yuktdhara-card {
     width: 300px;
     min-width: 300px;
-    max-width: 350px; /* Allow some expansion if content needs it */
+    max-width: 350px;
 }
 
 /* Scrollable cards specific styling */
 .scrollable-card {
-    max-height: 600px; /* Maximum height for scrollable cards */
+    max-height: 600px;
 }
 
 .scrollable-card .scrollable-body {
-    max-height: 450px; /* Maximum height for the scrollable body */
+    max-height: 400px;
     overflow-y: auto;
     overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.scrollable-card .scrollable-body::-webkit-scrollbar {
+    display: none;
 }
 
 /* Ensure Yuktdhara card grows with content */
 .yuktdhara-card .card-body {
-    min-height: 300px; /* Minimum content area */
+    min-height: 300px;
 }
 
-/* Hide scrollbar while maintaining scroll functionality */
-.scrollable-body {
-    /* Hide scrollbar for Webkit browsers (Chrome, Safari, Edge) */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* Internet Explorer 10+ */
+/* Search input styling */
+.search-input {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
 }
 
-.scrollable-body::-webkit-scrollbar {
-    width: 0;
-    height: 0;
-    display: none; /* Hide scrollbar for Webkit browsers */
+.search-input:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Hidden items for search */
+.search-hidden {
+    display: none !important;
 }
 
 /* Responsive adjustments */
@@ -340,7 +418,7 @@
     .yuktdhara-card {
         width: 100%;
         max-width: none;
-        order: -1; /* Move Yuktdhara card to top on smaller screens */
+        order: -1;
     }
 }
 </style>
@@ -353,10 +431,10 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // New filter endpoint
     const FILTER_ENDPOINT = '/dashboard/activity_identification/filter';
+    let allSelections = new Set(); // Track all selections (manual + auto)
 
-    // Map filter groups to the display fields in "Yuktdhara Dropdown Selections"
+    // Map filter groups to display fields
     const GROUP_TO_DISPLAY_FIELD = {
         nature_of_works: 'gaw',
         categories: 'master_catgory',
@@ -367,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
         permissible_works: 'permissible_work'
     };
 
-    // Map groups to their container elements for dynamic updates
+    // Map groups to containers
     const GROUP_TO_CONTAINER = {
         categories: 'categories-container',
         major_scheduled_category: 'major-scheduled-container',
@@ -378,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
         location_specifics: 'land-types-container'
     };
 
-    // Map groups to their count elements
+    // Map groups to count elements
     const GROUP_TO_COUNT = {
         major_scheduled_category: 'major-scheduled-count',
         work_types: 'work-types-count',
@@ -386,25 +464,13 @@ document.addEventListener('DOMContentLoaded', () => {
         location_specifics: 'land-types-count'
     };
 
-    // Initialize the display fields with "?"
+    // Initialize display fields
     Object.values(GROUP_TO_DISPLAY_FIELD).forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '?';
     });
 
-    // Auto-resize textareas
-    function autoResize(textarea) {
-        textarea.style.height = 'auto';
-        textarea.style.height = Math.max(38, textarea.scrollHeight) + 'px';
-    }
-
-    // Initialize auto-resize for all textareas
-    document.querySelectorAll('.auto-resize').forEach(textarea => {
-        autoResize(textarea);
-        textarea.addEventListener('input', () => autoResize(textarea));
-    });
-
-    // Loader helpers
+    // Loader management
     const overlay = document.getElementById('loaderOverlay');
     let inflight = 0;
 
@@ -424,21 +490,48 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Helper to get the label text for a given input
-    const getLabelText = (input) => {
-        return input.getAttribute('data-label') || '';
-    };
+    // Frontend-only search functionality
+    function setupSearch() {
+        const searchInputs = document.querySelectorAll('.search-input');
+        
+        searchInputs.forEach(input => {
+            input.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.trim().toLowerCase();
+                const containerId = e.target.id.replace('-search', '-container');
+                const container = document.getElementById(containerId);
+                
+                if (!container) return;
+                
+                const radioRows = container.querySelectorAll('.radio-row');
+                
+                radioRows.forEach(row => {
+                    const label = row.querySelector('label');
+                    if (label) {
+                        const labelText = label.textContent.toLowerCase();
+                        if (searchTerm === '' || labelText.includes(searchTerm)) {
+                            row.classList.remove('search-hidden');
+                        } else {
+                            row.classList.add('search-hidden');
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    // Helper functions
+    const getLabelText = (input) => input.getAttribute('data-label') || '';
 
     // Applied filters management
     const appliedFiltersContainer = document.getElementById('applied-filters-container');
     const noFiltersText = document.getElementById('no-filters-text');
     const clearAllBtn = document.getElementById('clear-all-filters');
 
-    // Update applied filters display
     function updateAppliedFilters(selections) {
         appliedFiltersContainer.innerHTML = '';
         let hasFilters = false;
 
+        // Show ALL selections, not just manual ones
         Object.entries(selections).forEach(([group, data]) => {
             if (data.ids.length > 0) {
                 hasFilters = true;
@@ -459,35 +552,35 @@ document.addEventListener('DOMContentLoaded', () => {
         noFiltersText.style.display = hasFilters ? 'none' : 'inline';
     }
 
-    // Handle individual filter removal
+    // Handle filter removal
     appliedFiltersContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-filter')) {
             const group = e.target.getAttribute('data-group');
             const id = e.target.getAttribute('data-id');
             
-            // Find and uncheck the corresponding radio button
             const radioBtn = document.querySelector(`input[data-group="${group}"][data-id="${id}"]`);
             if (radioBtn) {
                 radioBtn.checked = false;
+                allSelections.delete(`${group}_${id}`);
                 onChange();
             }
         }
     });
 
-    // Handle clear all filters
+    // Clear all filters
     clearAllBtn.addEventListener('click', () => {
         document.querySelectorAll('input.btn-check[data-group]').forEach(input => {
             input.checked = false;
         });
+        allSelections.clear();
         onChange();
     });
 
-    // Collect current selection state across all groups
+    // Collect selections
     const collectSelections = () => {
         const result = {};
         const radios = document.querySelectorAll('input.btn-check[data-group]');
         
-        // First pass: initialize all groups
         radios.forEach(input => {
             const group = input.getAttribute('data-group');
             if (!result[group]) {
@@ -495,7 +588,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Second pass: collect checked items (only one per group for radio buttons)
         radios.forEach(input => {
             const group = input.getAttribute('data-group');
             if (input.checked) {
@@ -507,7 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return result;
     };
 
-    // Update the right-hand "Yuktdhara Dropdown Selections" fields
+    // Update display fields
     const updateDisplayFields = (selections, autoFillData = {}) => {
         Object.entries(GROUP_TO_DISPLAY_FIELD).forEach(([group, fieldId]) => {
             const field = document.getElementById(fieldId);
@@ -516,98 +608,29 @@ document.addEventListener('DOMContentLoaded', () => {
             let value = '?';
             const labels = (selections[group]?.labels || []);
             
-            // Use selected value if available
             if (labels.length > 0) {
-                value = labels[0]; // Only one value for radio buttons
-            }
-            // Otherwise use auto-fill if available
-            else if (autoFillData[group]) {
+                value = labels[0];
+            } else if (autoFillData[group]) {
                 value = autoFillData[group].name;
             }
             
             field.value = value;
-            autoResize(field);
         });
     };
 
-    // Update dynamic radio buttons and counts
-    const updateDynamicElements = (data) => {
-        // Update categories
-        if (data.categories) {
-            updateRadioGroup('categories', data.categories, 'name');
-        }
-        
-        // Update major scheduled category
-        if (data.major_scheduled_category) {
-            updateRadioGroup('major_scheduled_category', data.major_scheduled_category, 'name');
-            updateCount('major-scheduled-count', data.major_scheduled_category_count);
-        }
-        
-        // Update beneficiaries
-        if (data.beneficiaries) {
-            updateRadioGroup('beneficiaries', data.beneficiaries, 'name');
-        }
-        
-        // Update activities (activity types)
-        if (data.activity_types) {
-            updateRadioGroup('activity_types', data.activity_types, 'short_name');
-        }
-        
-        // Update work types
-        if (data.work_types) {
-            updateRadioGroup('work_types', data.work_types, 'name');
-            updateCount('work-types-count', data.work_types_count);
-        }
-        
-        // Update permissible works
-        if (data.permissible_works) {
-            updateRadioGroup('permissible_works', data.permissible_works, 'name');
-            updateCount('permissible-works-count', data.permissible_works_count);
-        }
-
-        // Update location specifics (land types)
-        if (data.location_specifics) {
-            updateRadioGroup('location_specifics', data.location_specifics, 'name');
-            updateCount('land-types-count', data.location_specifics_count);
-        }
-    };
-
-    // Auto-select if exactly one enabled option remains in any group (frontend fallback)
-    const autoSelectSingleFromDOM = () => {
-        let changed = false;
-        Object.keys(GROUP_TO_CONTAINER).forEach(group => {
-            const enabled = Array.from(document.querySelectorAll(`input.btn-check[data-group="${group}"]`)).filter(r => !r.disabled);
-            const current = document.querySelector(`input.btn-check[data-group="${group}"]:checked`);
-            if (!current && enabled.length === 1) {
-                enabled[0].checked = true;
-                changed = true;
-            }
-        });
-
-        if (changed) {
-            const selections = collectSelections();
-            updateDisplayFields(selections);
-            updateAppliedFilters(selections);
-            debouncedFilter(selections);
-        }
-    };
-
-    // Helper to update a radio button group
-    const updateRadioGroup = (group, items, labelField) => {
+    // Update radio button groups for first row (btn-group)
+    const updateBtnGroup = (group, items, labelField) => {
         const container = document.getElementById(GROUP_TO_CONTAINER[group]);
         if (!container) return;
 
-        // Store currently selected value
         let currentSelection = null;
         const existingInput = container.querySelector('input.btn-check:checked');
         if (existingInput) {
             currentSelection = parseInt(existingInput.getAttribute('data-id'));
         }
 
-        // Clear container
         container.innerHTML = '';
 
-        // Add updated items
         items.forEach((item, index) => {
             const inputId = `btn${item[labelField]}${index}_${Date.now()}`;
             const isChecked = currentSelection === item.id;
@@ -627,7 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
             input.disabled = isDisabled;
 
             const label = document.createElement('label');
-            label.className = 'btn btn-outline-dark btn-sm text-center text-wrap';
+            label.className = 'btn btn-outline-dark btn-sm text-center';
             label.setAttribute('for', inputId);
             label.textContent = item[labelField].charAt(0).toUpperCase() + item[labelField].slice(1);
 
@@ -636,7 +659,52 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // Helper to update count badges
+    // Update radio button groups for second row (radio-row)
+    const updateRadioGroup = (group, items, labelField) => {
+        const container = document.getElementById(GROUP_TO_CONTAINER[group]);
+        if (!container) return;
+
+        let currentSelection = null;
+        const existingInput = container.querySelector('input.btn-check:checked');
+        if (existingInput) {
+            currentSelection = parseInt(existingInput.getAttribute('data-id'));
+        }
+
+        container.innerHTML = '';
+
+        items.forEach((item, index) => {
+            const inputId = `btn${item[labelField]}${index}_${Date.now()}`;
+            const isChecked = currentSelection === item.id;
+            const isDisabled = item.disabled || false;
+            
+            const radioRow = document.createElement('div');
+            radioRow.className = 'radio-row';
+            
+            const input = document.createElement('input');
+            input.type = 'radio';
+            input.className = 'btn-check';
+            input.name = group;
+            input.id = inputId;
+            input.autocomplete = 'off';
+            input.value = item.id;
+            input.setAttribute('data-id', item.id);
+            input.setAttribute('data-group', group);
+            input.setAttribute('data-label', item[labelField].charAt(0).toUpperCase() + item[labelField].slice(1));
+            input.checked = isChecked && !isDisabled;
+            input.disabled = isDisabled;
+
+            const label = document.createElement('label');
+            label.className = 'btn btn-outline-dark btn-sm full-width-label';
+            label.setAttribute('for', inputId);
+            label.textContent = item[labelField].charAt(0).toUpperCase() + item[labelField].slice(1);
+
+            radioRow.appendChild(input);
+            radioRow.appendChild(label);
+            container.appendChild(radioRow);
+        });
+    };
+
+    // Update counts
     const updateCount = (countId, count) => {
         const countEl = document.getElementById(countId);
         if (countEl) {
@@ -644,22 +712,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Handle auto-fill for single remaining options
+    // Update dynamic elements
+    const updateDynamicElements = (data) => {
+        // First row updates (btn-group style)
+        if (data.categories) {
+            updateBtnGroup('categories', data.categories, 'name');
+        }
+        
+        if (data.beneficiaries) {
+            updateBtnGroup('beneficiaries', data.beneficiaries, 'name');
+        }
+        
+        if (data.activity_types) {
+            updateBtnGroup('activity_types', data.activity_types, 'short_name');
+        }
+
+        // Second row updates (radio-row style)
+        if (data.major_scheduled_category) {
+            updateRadioGroup('major_scheduled_category', data.major_scheduled_category, 'name');
+            updateCount('major-scheduled-count', data.major_scheduled_category_count);
+        }
+        
+        if (data.work_types) {
+            updateRadioGroup('work_types', data.work_types, 'name');
+            updateCount('work-types-count', data.work_types_count);
+        }
+        
+        if (data.permissible_works) {
+            updateRadioGroup('permissible_works', data.permissible_works, 'name');
+            updateCount('permissible-works-count', data.permissible_works_count);
+        }
+
+        if (data.location_specifics) {
+            updateRadioGroup('location_specifics', data.location_specifics, 'name');
+            updateCount('land-types-count', data.location_specifics_count);
+        }
+    };
+
+    // Handle auto-fill
     const handleAutoFill = (autoFillData) => {
         Object.entries(autoFillData).forEach(([group, data]) => {
-            // Check if this group doesn't already have a selection
             const currentRadio = document.querySelector(`input[data-group="${group}"]:checked`);
             if (!currentRadio) {
-                // Find the radio button for this auto-fill option and select it
                 const radioToSelect = document.querySelector(`input[data-group="${group}"][data-id="${data.id}"]`);
                 if (radioToSelect && !radioToSelect.disabled) {
                     radioToSelect.checked = true;
+                    allSelections.add(`${group}_${data.id}`);
                 }
             }
         });
     };
 
-    // Debounce to avoid flooding requests on quick clicks
+    // Debounced filtering
     let debounceTimer = null;
     let currentAbort = null;
 
@@ -667,10 +771,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (debounceTimer) clearTimeout(debounceTimer);
         debounceTimer = setTimeout(async () => {
             try {
-                // Prepare data for POST request - create a clean object
                 const filterData = {};
                 
-                // Only add groups that have selections
                 Object.keys(selections).forEach(group => {
                     const ids = selections[group].ids;
                     if (ids && ids.length > 0) {
@@ -678,7 +780,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
 
-                // Abort previous fetch if still running
                 if (currentAbort) currentAbort.abort();
                 currentAbort = new AbortController();
 
@@ -700,7 +801,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (result.success) {
                         updateDynamicElements(result.data);
                         
-                        // Prefer backend-provided auto-fill, otherwise fallback to DOM-based check
                         const autoFill = result.data.auto_fill;
                         if (autoFill && Object.keys(autoFill).length > 0) {
                             setTimeout(() => {
@@ -709,10 +809,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 updateDisplayFields(updatedSelections, autoFill);
                                 updateAppliedFilters(updatedSelections);
                             }, 100);
-                        } else {
-                            // Frontend-only fallback when backend doesn't provide auto_fill
-                            setTimeout(() => autoSelectSingleFromDOM(), 50);
                         }
+                        
+                        // Re-setup search after dynamic updates
+                        setupSearch();
                     } else {
                         console.error('Filter error:', result.error);
                     }
@@ -730,7 +830,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300);
     };
 
-    // Handle radio button changes
+    // Handle changes
     const onChange = () => {
         const selections = collectSelections();
         updateDisplayFields(selections);
@@ -738,7 +838,7 @@ document.addEventListener('DOMContentLoaded', () => {
         debouncedFilter(selections);
     };
 
-    // Enable radio unselect on re-click (handles both input and label clicks)
+    // Track selections
     document.addEventListener('pointerdown', (evt) => {
         let input = null;
         if (evt.target.matches('input.btn-check[data-group]')) {
@@ -748,6 +848,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById(forId);
             if (el && el.matches('input.btn-check[data-group]')) input = el;
         }
+        
         if (input && input.type === 'radio' && input.checked && !input.disabled) {
             input.dataset.wasChecked = 'true';
         }
@@ -762,24 +863,39 @@ document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById(forId);
             if (el && el.matches('input.btn-check[data-group]')) input = el;
         }
-        if (input && input.dataset.wasChecked === 'true') {
-            // Uncheck and propagate change
-            input.checked = false;
-            delete input.dataset.wasChecked;
-            input.dispatchEvent(new Event('change', { bubbles: true }));
-            evt.preventDefault();
-        } else if (input) {
-            delete input.dataset.wasChecked;
+        
+        if (input) {
+            if (input.dataset.wasChecked === 'true') {
+                input.checked = false;
+                delete input.dataset.wasChecked;
+                const key = `${input.getAttribute('data-group')}_${input.getAttribute('data-id')}`;
+                allSelections.delete(key);
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                evt.preventDefault();
+            } else {
+                delete input.dataset.wasChecked;
+                if (input.checked) {
+                    const key = `${input.getAttribute('data-group')}_${input.getAttribute('data-id')}`;
+                    allSelections.add(key);
+                }
+            }
         }
     });
 
-    // Set up listeners on all filter radio buttons (using event delegation)
+    // Handle radio button changes
     document.addEventListener('change', (evt) => {
         const target = evt.target;
         if (target && target.matches('input.btn-check[data-group]')) {
+            if (target.checked) {
+                const key = `${target.getAttribute('data-group')}_${target.getAttribute('data-id')}`;
+                allSelections.add(key);
+            }
             onChange();
         }
     });
+
+    // Initialize search functionality
+    setupSearch();
 
     // Initial sync
     const initialSelections = collectSelections();
