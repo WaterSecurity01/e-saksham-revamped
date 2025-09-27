@@ -229,19 +229,6 @@ def activity_identification_filter():
 
         permissible_filter_active = bool(data.get("permissible_works"))
 
-        slope_force_any = False
-        slope_baseline_ids = filtered_ids.get("slopes", set())
-        ridge_baseline_ids = filtered_ids.get("ridges", set())
-        if permissible_filter_active and slope_baseline_ids:
-            slope_all_base = {1, 2, 3, 4, 5, 6}
-            if slope_all_base.issubset(slope_baseline_ids):
-                slope_force_any = True
-            elif ridge_baseline_ids and ridge_baseline_ids == {1, 2, 3}:
-                slope_force_any = True
-
-        if slope_force_any:
-            filtered_ids["slopes"] = {7}
-
         for key, (model, fields) in model_map.items():
             all_options = orm_to_dict_list(model.query.order_by(model.id).all(), fields)
             
@@ -265,9 +252,8 @@ def activity_identification_filter():
                 selected_ids: List[int] = []
 
                 if key == "slopes":
-                    if slope_force_any:
+                    if permissible_filter_active and enabled_count == 6:
                         selected_ids = [7]
-                        # disable other slope bands and ensure "Any Slope" remains available
                         for opt in enriched:
                             if opt["id"] == 7:
                                 opt["disabled"] = False
@@ -275,16 +261,18 @@ def activity_identification_filter():
                                 opt["disabled"] = True
                         enabled_options = [opt for opt in enriched if not opt["disabled"]]
                         enabled_count = len(enabled_options)
+                    elif permissible_filter_active and enabled_count == 1 and enabled_options[0]["id"] == 7:
+                        selected_ids = [7]
                     elif permissible_filter_active and enabled_count > 0:
                         slope_enabled_ids = {opt["id"] for opt in enabled_options}
                         any_slope_option = next((opt for opt in enriched if opt["id"] == 7), None)
 
-                        ridge_enabled_ids = filtered_ids.get("ridges", set())
-                        ridge_condition = ridge_enabled_ids and ridge_enabled_ids == {1, 2, 3}
                         slope_condition = all(sid in slope_enabled_ids for sid in [1, 2, 3, 4, 5, 6])
 
-                        if any_slope_option and not any_slope_option["disabled"] and (slope_condition or ridge_condition):
+                        if any_slope_option and not any_slope_option["disabled"] and slope_condition:
                             selected_ids = [7]
+                        else:
+                            selected_ids = [opt["id"] for opt in enabled_options]
                     elif enabled_count == 1 and not data.get(key):
                         selected_ids = [enabled_options[0]["id"]]
                 else:

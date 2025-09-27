@@ -4,16 +4,23 @@
 <div class="d-flex bg-primary py-2 text-white justify-content-center">Activity Identification on Yuktdhara</div>
 
 <!-- Permissible Work Search -->
-<div class="card mx-2 mt-3 mb-2" id="permissible-search-card">
-    <div class="card-body py-2">
-        <label for="permissible-search" class="form-label mb-1">Search Permissible Works</label>
-        <input type="text" class="form-control form-control-sm" id="permissible-search" placeholder="Type at least 3 characters..." autocomplete="off">
-        <div class="form-text">Matching categories, work types, and permissible works will stay enabled.</div>
+<div class="search-container pt-4 mb-2" id="permissible-search-card">
+    <div class="search-box">
+        <input 
+            type="text" 
+            class="search-input" 
+            id="permissible-search" 
+            placeholder="Search Permissible Work / Work Type / Major Scheduled Category..."
+            autocomplete="off"
+        >
+        <button class="search-btn" id="permissible-search-btn" type="button" disabled>
+            <i class="fas fa-search"></i>
+        </button>
     </div>
 </div>
 
 <!-- Applied Filters Row -->
-<div class="d-flex justify-content-between fs-8 align-items-center py-2 px-3 bg-light border-bottom" id="applied-filters-row">
+<div class="d-flex justify-content-between fs-8 align-items-center py-1 px-3 bg-light border-bottom invisible" id="applied-filters-row">
     <div class="d-flex flex-wrap gap-1 align-items-center">
         <span class="text-muted me-2">Applied Filters:</span>
         <div id="applied-filters-container" class="d-flex flex-wrap gap-1">
@@ -22,7 +29,7 @@
         <span id="no-filters-text" class="text-muted fst-italic">None</span>
     </div>
     <button type="button" class="btn btn-outline-danger btn-sm fs-8" id="clear-all-filters">
-        <i class="fas fa-times"></i> Clear All
+        <i class="fas fa-times"></i> Clear
     </button>
 </div>
 
@@ -34,15 +41,15 @@
                 <div class="fw-bold text-center">Nature of Work</div>
                 <div class="btn-group" role="group" aria-label="Nature of Work selection">
                     {% for item in nature_of_work %}
-                    <input type="radio" class="btn-check" name="nature_of_works" id="btn{{item.short_name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="nature_of_works" data-label="{{item.short_name}}">
-                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn{{item.short_name}}{{loop.index}}">{{ item.short_name}}</label>
+                    <input type="radio" class="btn-check" name="nature_of_works" id="btn-nature_of_works-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="nature_of_works" data-label="{{item.short_name}}">
+                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn-nature_of_works-{{item.id}}">{{ item.short_name}}</label>
                     {% endfor %}
                 </div>
                 <div class="fw-bold text-center">Master Category</div>
                 <div class="btn-group" role="group" aria-label="Master Category selection" id="categories-container">
                     {% for item in categories %}
-                    <input type="radio" class="btn-check" name="categories" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="categories" data-label="{{item.name}}">
-                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn{{item.name}}{{loop.index}}">{{ item.name}}</label>
+                    <input type="radio" class="btn-check" name="categories" id="btn-categories-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="categories" data-label="{{item.name}}">
+                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn-categories-{{item.id}}">{{ item.name}}</label>
                     {% endfor %}
                 </div>
             </div>
@@ -51,18 +58,18 @@
     <div class="card flex-fill m-2">
         <div class="card-body px-2">
             <div class="d-grid gap-2">
-                <div class="fw-bold text-center">Select Ridge</div>
+                <div class="fw-bold text-center">Ridge</div>
                 <div class="btn-group flex-wrap" role="group" aria-label="Ridge selection" id="ridges-container">
                     {% for item in ridges %}
-                    <input type="checkbox" class="btn-check" name="ridges" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="ridges" data-label="{{item.name}}">
-                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn{{item.name}}{{loop.index}}">{{ item.name }}</label>
+                    <input type="checkbox" class="btn-check" name="ridges" id="btn-ridges-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="ridges" data-label="{{item.name}}">
+                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn-ridges-{{item.id}}">{{ item.name }}</label>
                     {% endfor %}
                 </div>
-                <div class="fw-bold text-center">Select Cluster</div>
+                <div class="fw-bold text-center">Cluster</div>
                 <div class="btn-group flex-wrap" role="group" aria-label="Cluster selection" id="clusters-container" style="cursor: not-allowed;">
                     {% for item in clusters %}
-                    <input type="checkbox" class="btn-check" name="clusters" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="clusters" data-label="{{item.name}}">
-                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.name}}{{loop.index}}">{{ item.name }}</label>
+                    <input type="checkbox" class="btn-check" name="clusters" id="btn-clusters-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="clusters" data-label="{{item.name}}">
+                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn-clusters-{{item.id}}">{{ item.name }}</label>
                     {% endfor %}
                 </div>
             </div>
@@ -74,15 +81,15 @@
                 <div class="fw-bold text-center">Slope %</div>
                 <div class="btn-group flex-wrap" role="group" aria-label="Slope selection" id="slopes-container">
                     {% for item in slopes %}
-                    <input type="checkbox" class="btn-check" name="slopes" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="slopes" data-label="{{item.name}}">
-                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.name}}{{loop.index}}">{{ item.name }}</label>
+                    <input type="checkbox" class="btn-check" name="slopes" id="btn-slopes-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="slopes" data-label="{{item.name}}">
+                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn-slopes-{{item.id}}">{{ item.name }}</label>
                     {% endfor %}
                 </div>
                 <div class="fw-bold text-center">Water Works</div>
                 <div class="btn-group flex-wrap" role="group" aria-label="Water Works selection" id="water-works-container">
                     {% for item in water_works %}
-                    <input type="checkbox" class="btn-check" name="water_works" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="water_works" data-label="{{item.name}}">
-                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn{{item.name}}{{loop.index}}">{{ item.name}}</label>
+                    <input type="checkbox" class="btn-check" name="water_works" id="btn-water_works-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="water_works" data-label="{{item.name}}">
+                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn-water_works-{{item.id}}">{{ item.name}}</label>
                     {% endfor %}
                 </div>
             </div>
@@ -94,15 +101,15 @@
                 <div class="fw-bold text-center">Beneficiary Type</div>
                 <div class="btn-group" role="group" aria-label="Beneficiary Type selection" id="beneficiaries-container">
                     {% for item in beneficiaries %}
-                    <input type="radio" class="btn-check" name="beneficiaries" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="beneficiaries" data-label="{{item.name | capitalize}}">
-                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+                    <input type="radio" class="btn-check" name="beneficiaries" id="btn-beneficiaries-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="beneficiaries" data-label="{{item.name | capitalize}}">
+                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn-beneficiaries-{{item.id}}">{{ item.name | capitalize}}</label>
                     {% endfor %}
                 </div>
                 <div class="fw-bold text-center">Activity Type</div>
                 <div class="btn-group" role="group" aria-label="Activity Type selection" id="activities-container">
                     {% for item in activities %}
-                    <input type="radio" class="btn-check" name="activity_types" id="btn{{item.short_name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="activity_types" data-label="{{item.short_name | capitalize}}">
-                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn{{item.short_name}}{{loop.index}}">{{ item.short_name | capitalize}}</label>
+                    <input type="radio" class="btn-check" name="activity_types" id="btn-activity_types-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="activity_types" data-label="{{item.short_name | capitalize}}">
+                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn-activity_types-{{item.id}}">{{ item.short_name | capitalize}}</label>
                     {% endfor %}
                 </div>
             </div>
@@ -124,8 +131,8 @@
                 <div class="d-grid gap-2" id="land-types-container">
                 {% for item in land_types %}
                 <div class="radio-row">
-                    <input type="checkbox" class="btn-check" name="location_specifics" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="location_specifics" data-label="{{item.name | capitalize}}">
-                    <label class="btn btn-outline-dark btn-sm full-width-label btn-text-scroll" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+                    <input type="checkbox" class="btn-check" name="location_specifics" id="btn-location_specifics-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="location_specifics" data-label="{{item.name | capitalize}}">
+                    <label class="btn btn-outline-dark btn-sm full-width-label btn-text-scroll" for="btn-location_specifics-{{item.id}}">{{ item.name | capitalize}}</label>
                 </div>
                 {% endfor %}
                 </div>
@@ -144,8 +151,8 @@
                 <div class="d-grid gap-2" id="major-scheduled-container">
                 {% for item in major_scheduled_category %}
                 <div class="radio-row">
-                    <input type="radio" class="btn-check" name="major_scheduled_category" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="major_scheduled_category" data-label="{{item.name | capitalize}}">
-                    <label class="btn btn-outline-dark btn-sm full-width-label btn-text-scroll" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+                    <input type="radio" class="btn-check" name="major_scheduled_category" id="btn-major_scheduled_category-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="major_scheduled_category" data-label="{{item.name | capitalize}}">
+                    <label class="btn btn-outline-dark btn-sm full-width-label btn-text-scroll" for="btn-major_scheduled_category-{{item.id}}">{{ item.name | capitalize}}</label>
                 </div>
                 {% endfor %}
                 </div>
@@ -164,8 +171,8 @@
                 <div class="d-grid gap-2" id="work-types-container">
                 {% for item in work_types %}
                 <div class="radio-row">
-                    <input type="radio" class="btn-check" name="work_types" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="work_types" data-label="{{item.name | capitalize}}">
-                    <label class="btn btn-outline-dark btn-sm full-width-label" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+                    <input type="radio" class="btn-check" name="work_types" id="btn-work_types-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="work_types" data-label="{{item.name | capitalize}}">
+                    <label class="btn btn-outline-dark btn-sm full-width-label btn-text-scroll" for="btn-work_types-{{item.id}}">{{ item.name | capitalize}}</label>
                 </div>
                 {% endfor %}
                 </div>
@@ -184,8 +191,8 @@
                 <div class="d-grid gap-2" id="permissible-works-container">
                 {% for item in permissible_works %}
                     <div class="radio-row">
-                        <input type="radio" class="btn-check" name="permissible_works" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="permissible_works" data-label="{{item.name | capitalize}}">
-                        <label class="btn btn-outline-dark btn-sm full-width-label btn-text-scroll" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+                        <input type="radio" class="btn-check" name="permissible_works" id="btn-permissible_works-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="permissible_works" data-label="{{item.name | capitalize}}">
+                        <label class="btn btn-outline-dark btn-sm full-width-label btn-text-scroll" for="btn-permissible_works-{{item.id}}">{{ item.name | capitalize}}</label>
                     </div>
                 {% endfor %}
                 </div>
@@ -305,6 +312,7 @@
     opacity: 0.45;
     background-color: #f8f9fa;
     border-color: #dee2e6;
+    color: #212529;
 }
 
 #clusters-container .btn-check:disabled + .btn,
@@ -329,6 +337,67 @@
     display: none;
 }
 
+.search-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: min-height 0.3s ease, align-items 0.3s ease;
+}
+
+.search-container.searched {
+    min-height: 10vh;
+    align-items: flex-start;
+}
+
+.search-box {
+    width: 100%;
+    max-width: 600px;
+    position: relative;
+}
+
+.search-input {
+    width: 100%;
+    padding: 15px 50px 15px 20px;
+    border: 2px solid #ddd;
+    border-radius: 25px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #0d6efd;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+}
+
+.search-btn {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #0d6efd;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-btn:hover {
+    background: #0b5ed7;
+}
+
+.search-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
 /* Filter badges */
 .filter-badge {
     background-color: var(--bs-secondary);
@@ -336,10 +405,9 @@
     border: none;
     padding: 0.25rem 0.5rem;
     border-radius: 0.375rem;
-    font-size: 0.7rem;
+    font-size: 0.55rem;
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
     cursor: pointer;
     transition: background-color 0.15s ease-in-out;
 }
@@ -518,6 +586,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let searchDebounceTimer = null;
     let currentSearchAbort = null;
     let permissibleSearchInput = null;
+    let permissibleSearchBtn = null;
+    let searchContainerEl = null;
 
     const SUPPRESSED_AUTO = {
         fill: new Set(),
@@ -525,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const suppressGroup = (group) => {
-        if (!group) return;
+        if (!group || LOCKED_GROUPS.has(group)) return;
         SUPPRESSED_AUTO.fill.add(group);
         SUPPRESSED_AUTO.select.add(group);
     };
@@ -598,6 +668,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         noFiltersText.style.display = hasFilters ? 'none' : 'inline';
+        const filterRow = document.getElementById('applied-filters-row');
+        if (filterRow) {
+            filterRow.classList.toggle('invisible', !hasFilters);
+        }
     }
 
     // Handle filter removal
@@ -642,6 +716,12 @@ document.addEventListener('DOMContentLoaded', () => {
             currentSearchAbort = null;
         }
         restoreSearchTargets({ skipDisplayUpdate: true });
+        if (permissibleSearchBtn) {
+            permissibleSearchBtn.disabled = true;
+        }
+        if (searchContainerEl) {
+            searchContainerEl.classList.remove('searched');
+        }
 
         onChange();
     });
@@ -749,7 +829,12 @@ document.addEventListener('DOMContentLoaded', () => {
             input.setAttribute('data-group', group);
             input.setAttribute('data-label', labelValue);
             input.checked = shouldCheck;
-            input.disabled = isLocked || isDisabled;
+            input.disabled = isDisabled;
+            if (isLocked) {
+                input.setAttribute('data-locked', 'true');
+            } else {
+                input.removeAttribute('data-locked');
+            }
 
             if (input.checked) {
                 newlyCheckedIds.add(optionId);
@@ -803,7 +888,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const effectiveCount = filterSnapshot[group].count;
-        if (effectiveCount === 0 || effectiveCount > 1) {
+        if (effectiveCount <= 1) {
             releaseGroup(group);
         }
     };
@@ -926,6 +1011,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const handleAutoSelect = (autoSelectData) => {
         Object.entries(autoSelectData).forEach(([group, ids]) => {
+            const snapshot = filterSnapshot[group];
+            const forceSelect = snapshot && snapshot.count <= 1;
+
+            if (forceSelect) {
+                SUPPRESSED_AUTO.select.delete(group);
+            }
+
             if (SUPPRESSED_AUTO.select.has(group)) {
                 return;
             }
@@ -956,6 +1048,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle auto-fill
     const handleAutoFill = (autoFillData) => {
         Object.entries(autoFillData).forEach(([group, data]) => {
+            const snapshot = filterSnapshot[group];
+            const forceFill = snapshot && snapshot.count <= 1;
+
+            if (forceFill) {
+                SUPPRESSED_AUTO.fill.delete(group);
+            }
+
             if (SUPPRESSED_AUTO.fill.has(group)) {
                 return;
             }
@@ -1069,6 +1168,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (input && input.type === 'radio' && input.checked && !input.disabled) {
             input.dataset.wasChecked = 'true';
         }
+
+        if (input && input.dataset.locked === 'true') {
+            evt.preventDefault();
+            evt.stopPropagation();
+        }
     });
 
     document.addEventListener('click', (evt) => {
@@ -1082,6 +1186,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         if (input) {
+            if (input.dataset.locked === 'true') {
+                evt.preventDefault();
+                return;
+            }
             if (input.dataset.wasChecked === 'true') {
                 input.checked = false;
                 delete input.dataset.wasChecked;
@@ -1164,6 +1272,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     permissibleSearchInput = document.getElementById('permissible-search');
+    permissibleSearchBtn = document.getElementById('permissible-search-btn');
+    searchContainerEl = document.getElementById('permissible-search-card');
+
     if (permissibleSearchInput) {
         permissibleSearchInput.addEventListener('input', (evt) => {
             const term = evt.target.value.trim();
@@ -1171,6 +1282,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (searchDebounceTimer) {
                 clearTimeout(searchDebounceTimer);
+            }
+
+            if (permissibleSearchBtn) {
+                permissibleSearchBtn.disabled = term.length < 3;
+            }
+
+            if (term.length >= 3) {
+                if (searchContainerEl) {
+                    searchContainerEl.classList.add('searched');
+                }
+            } else {
+                if (searchContainerEl) {
+                    searchContainerEl.classList.remove('searched');
+                }
             }
 
             if (term.length === 0) {
@@ -1196,6 +1321,15 @@ document.addEventListener('DOMContentLoaded', () => {
             searchDebounceTimer = setTimeout(() => {
                 performSearch(term);
             }, 400);
+        });
+    }
+
+    if (permissibleSearchBtn && permissibleSearchInput) {
+        permissibleSearchBtn.addEventListener('click', () => {
+            const term = permissibleSearchInput.value.trim();
+            if (term.length >= 3) {
+                performSearch(term);
+            }
         });
     }
 
