@@ -3,6 +3,15 @@
 {% block content %}
 <div class="d-flex bg-primary py-2 text-white justify-content-center">Activity Identification on Yuktdhara</div>
 
+<!-- Permissible Work Search -->
+<div class="card mx-2 mt-3 mb-2" id="permissible-search-card">
+    <div class="card-body py-2">
+        <label for="permissible-search" class="form-label mb-1">Search Permissible Works</label>
+        <input type="text" class="form-control form-control-sm" id="permissible-search" placeholder="Type at least 3 characters..." autocomplete="off">
+        <div class="form-text">Matching categories, work types, and permissible works will stay enabled.</div>
+    </div>
+</div>
+
 <!-- Applied Filters Row -->
 <div class="d-flex justify-content-between fs-8 align-items-center py-2 px-3 bg-light border-bottom" id="applied-filters-row">
     <div class="d-flex flex-wrap gap-1 align-items-center">
@@ -26,14 +35,14 @@
                 <div class="btn-group" role="group" aria-label="Nature of Work selection">
                     {% for item in nature_of_work %}
                     <input type="radio" class="btn-check" name="nature_of_works" id="btn{{item.short_name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="nature_of_works" data-label="{{item.short_name}}">
-                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.short_name}}{{loop.index}}">{{ item.short_name}}</label>
+                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn{{item.short_name}}{{loop.index}}">{{ item.short_name}}</label>
                     {% endfor %}
                 </div>
                 <div class="fw-bold text-center">Master Category</div>
                 <div class="btn-group" role="group" aria-label="Master Category selection" id="categories-container">
                     {% for item in categories %}
                     <input type="radio" class="btn-check" name="categories" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="categories" data-label="{{item.name}}">
-                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.name}}{{loop.index}}">{{ item.name}}</label>
+                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn{{item.name}}{{loop.index}}">{{ item.name}}</label>
                     {% endfor %}
                 </div>
             </div>
@@ -43,16 +52,16 @@
         <div class="card-body px-2">
             <div class="d-grid gap-2">
                 <div class="fw-bold text-center">Select Ridge</div>
-                <div class="btn-group" role="group" aria-label="Ridge selection">
+                <div class="btn-group flex-wrap" role="group" aria-label="Ridge selection" id="ridges-container">
                     {% for item in ridges %}
-                    <input type="radio" class="btn-check" name="ridges" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="ridges" data-label="{{item.name}}">
-                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.name}}{{loop.index}}">{{ item.name }}</label>
+                    <input type="checkbox" class="btn-check" name="ridges" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="ridges" data-label="{{item.name}}">
+                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn{{item.name}}{{loop.index}}">{{ item.name }}</label>
                     {% endfor %}
                 </div>
                 <div class="fw-bold text-center">Select Cluster</div>
-                <div class="btn-group" role="group" aria-label="Cluster selection">
+                <div class="btn-group flex-wrap" role="group" aria-label="Cluster selection" id="clusters-container" style="cursor: not-allowed;">
                     {% for item in clusters %}
-                    <input type="radio" class="btn-check" name="clusters" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="clusters" data-label="{{item.name}}">
+                    <input type="checkbox" class="btn-check" name="clusters" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="clusters" data-label="{{item.name}}">
                     <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.name}}{{loop.index}}">{{ item.name }}</label>
                     {% endfor %}
                 </div>
@@ -63,17 +72,17 @@
         <div class="card-body px-2">
             <div class="d-grid gap-2">
                 <div class="fw-bold text-center">Slope %</div>
-                <div class="btn-group" role="group" aria-label="Slope selection">
+                <div class="btn-group flex-wrap" role="group" aria-label="Slope selection" id="slopes-container">
                     {% for item in slopes %}
-                    <input type="radio" class="btn-check" name="slopes" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="slopes" data-label="{{item.name}}">
+                    <input type="checkbox" class="btn-check" name="slopes" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="slopes" data-label="{{item.name}}">
                     <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.name}}{{loop.index}}">{{ item.name }}</label>
                     {% endfor %}
                 </div>
                 <div class="fw-bold text-center">Water Works</div>
-                <div class="btn-group" role="group" aria-label="Water Works selection">
+                <div class="btn-group flex-wrap" role="group" aria-label="Water Works selection" id="water-works-container">
                     {% for item in water_works %}
-                    <input type="radio" class="btn-check" name="water_works" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="water_works" data-label="{{item.name}}">
-                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.name}}{{loop.index}}">{{ item.name}}</label>
+                    <input type="checkbox" class="btn-check" name="water_works" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="water_works" data-label="{{item.name}}">
+                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn{{item.name}}{{loop.index}}">{{ item.name}}</label>
                     {% endfor %}
                 </div>
             </div>
@@ -86,14 +95,14 @@
                 <div class="btn-group" role="group" aria-label="Beneficiary Type selection" id="beneficiaries-container">
                     {% for item in beneficiaries %}
                     <input type="radio" class="btn-check" name="beneficiaries" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="beneficiaries" data-label="{{item.name | capitalize}}">
-                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
                     {% endfor %}
                 </div>
                 <div class="fw-bold text-center">Activity Type</div>
                 <div class="btn-group" role="group" aria-label="Activity Type selection" id="activities-container">
                     {% for item in activities %}
                     <input type="radio" class="btn-check" name="activity_types" id="btn{{item.short_name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="activity_types" data-label="{{item.short_name | capitalize}}">
-                    <label class="btn btn-outline-dark btn-sm text-center" for="btn{{item.short_name}}{{loop.index}}">{{ item.short_name | capitalize}}</label>
+                    <label class="btn btn-outline-dark btn-sm text-center btn-text-scroll" for="btn{{item.short_name}}{{loop.index}}">{{ item.short_name | capitalize}}</label>
                     {% endfor %}
                 </div>
             </div>
@@ -101,68 +110,56 @@
     </div>
 </div>
 
-<!-- SECOND ROW - Radio row styling with search -->
+<!-- SECOND ROW - Option row styling -->
 <div class="d-flex justify-content-between align-items-stretch" id="second-row"> 
-    <div class="card flex-fill mx-2 d-flex flex-column scrollable-card">
+    <div class="card  mx-2 d-flex flex-column scrollable-card">
         <div class="card-header text-center">
             <div class="d-flex justify-content-between align-items-center">
                 <span>{{ "Land Type" }}</span>
-                <span class="perfect-circle bg-dark text-white fs-7 p-1" id="land-types-count">{{land_types|length}}</span>
+                <span class="badge bg-dark" id="land-types-count">{{land_types|length}}</span>
             </div>
         </div>
         <div class="card-body d-flex flex-column">
-            <!-- Search input -->
-            <div class="mb-2">
-                <input type="text" class="form-control form-control-sm search-input" id="land-types-search" placeholder="Search land types..." autocomplete="off">
-            </div>
             <div class="overflow-auto flex-fill scrollable-body">
                 <div class="d-grid gap-2" id="land-types-container">
                 {% for item in land_types %}
                 <div class="radio-row">
-                    <input type="radio" class="btn-check" name="location_specifics" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="location_specifics" data-label="{{item.name | capitalize}}">
-                    <label class="btn btn-outline-dark btn-sm full-width-label" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+                    <input type="checkbox" class="btn-check" name="location_specifics" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="location_specifics" data-label="{{item.name | capitalize}}">
+                    <label class="btn btn-outline-dark btn-sm full-width-label btn-text-scroll" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
                 </div>
                 {% endfor %}
                 </div>
             </div>
         </div>
     </div>   
-    <div class="card flex-fill mx-2 d-flex flex-column scrollable-card">
+    <div class="card card-fixed mx-2 d-flex flex-column scrollable-card">
         <div class="card-header text-center">
             <div class="d-flex justify-content-between align-items-center">
                 <span>{{ "Major Scheduled Category" }}</span>
-                <span class="perfect-circle bg-dark text-white fs-7 p-1" id="major-scheduled-count">{{major_scheduled_category|length}}</span>
+                <span class="badge bg-dark" id="major-scheduled-count">{{major_scheduled_category|length}}</span>
             </div>
         </div>
         <div class="card-body d-flex flex-column">
-            <!-- Search input -->
-            <div class="mb-2">
-                <input type="text" class="form-control form-control-sm search-input" id="major-scheduled-search" placeholder="Search categories..." autocomplete="off">
-            </div>
             <div class="overflow-auto flex-fill scrollable-body">
                 <div class="d-grid gap-2" id="major-scheduled-container">
                 {% for item in major_scheduled_category %}
                 <div class="radio-row">
                     <input type="radio" class="btn-check" name="major_scheduled_category" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="major_scheduled_category" data-label="{{item.name | capitalize}}">
-                    <label class="btn btn-outline-dark btn-sm full-width-label" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+                    <label class="btn btn-outline-dark btn-sm full-width-label btn-text-scroll" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
                 </div>
                 {% endfor %}
                 </div>
             </div>
         </div>
     </div>
-    <div class="card flex-fill mx-2 d-flex flex-column scrollable-card">
+    <div class="card card-fixed mx-2 d-flex flex-column scrollable-card">
         <div class="card-header text-center">
             <div class="d-flex justify-content-between align-items-center">
                 <span>{{ "Work Type" }}</span>
-                <span class="perfect-circle bg-dark text-white fs-7 p-1" id="work-types-count">{{work_types|length}}</span>
+                <span class="badge bg-dark" id="work-types-count">{{work_types|length}}</span>
             </div>
         </div>
         <div class="card-body d-flex flex-column">
-            <!-- Search input -->
-            <div class="mb-2">
-                <input type="text" class="form-control form-control-sm search-input" id="work-types-search" placeholder="Search work types..." autocomplete="off">
-            </div>
             <div class="overflow-auto flex-fill scrollable-body">
                 <div class="d-grid gap-2" id="work-types-container">
                 {% for item in work_types %}
@@ -175,24 +172,20 @@
             </div>
         </div>
     </div>
-    <div class="card flex-fill mx-2 d-flex flex-column scrollable-card">
+    <div class="card card-fixed mx-2 d-flex flex-column scrollable-card">
         <div class="card-header text-center">
             <div class="d-flex justify-content-between align-items-center">
                 <div>{{ "Permissible Work"}}</div>
-                <div class="perfect-circle bg-dark text-white fs-7 p-1" id="permissible-works-count">{{permissible_works|length}}</div>
+                <span class="badge bg-dark" id="permissible-works-count">{{permissible_works|length}}</span>
             </div>
         </div>
         <div class="card-body d-flex flex-column">
-            <!-- Search input -->
-            <div class="mb-2">
-                <input type="text" class="form-control form-control-sm search-input" id="permissible-works-search" placeholder="Search permissible works..." autocomplete="off">
-            </div>
             <div class="overflow-auto flex-fill scrollable-body">
                 <div class="d-grid gap-2" id="permissible-works-container">
                 {% for item in permissible_works %}
                     <div class="radio-row">
                         <input type="radio" class="btn-check" name="permissible_works" id="btn{{item.name}}{{loop.index}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="permissible_works" data-label="{{item.name | capitalize}}">
-                        <label class="btn btn-outline-dark btn-sm full-width-label" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
+                        <label class="btn btn-outline-dark btn-sm full-width-label btn-text-scroll" for="btn{{item.name}}{{loop.index}}">{{ item.name | capitalize}}</label>
                     </div>
                 {% endfor %}
                 </div>
@@ -267,8 +260,7 @@
 .full-width-label {
     width: 100% !important;
     text-align: center !important;
-    white-space: normal !important;
-    word-wrap: break-word !important;
+    white-space: nowrap !important;
     min-height: 38px !important;
     display: flex !important;
     align-items: center !important;
@@ -305,11 +297,36 @@
 
 /* Disabled radio button styling */
 .btn-check:disabled + .btn {
-    opacity: 0.4;
-    pointer-events: none;
+    cursor: not-allowed;
+}
+
+.btn-check:disabled:not(:checked) + .btn,
+.btn-disabled {
+    opacity: 0.45;
     background-color: #f8f9fa;
     border-color: #dee2e6;
-    color: #6c757d;
+}
+
+#clusters-container .btn-check:disabled + .btn,
+#clusters-container .btn-check:disabled:not(:checked) + .btn {
+    opacity: 1;
+    background-color: #fff;
+    border-color: #212529;
+    color: #212529;
+}
+
+.btn-text-scroll {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.btn-text-scroll::-webkit-scrollbar {
+    display: none;
 }
 
 /* Filter badges */
@@ -329,6 +346,14 @@
 
 .filter-badge:hover {
     background-color: var(--bs-danger);
+}
+
+.filter-badge.locked-filter {
+    cursor: default;
+}
+
+.filter-badge.locked-filter:hover {
+    background-color: var(--bs-secondary);
 }
 
 .filter-badge .remove-filter {
@@ -357,15 +382,18 @@
     width: 300px;
     min-width: 300px;
     max-width: 350px;
+    max-height: 550px;
+    min-height: 550px;
 }
+
+
 
 /* Scrollable cards specific styling */
 .scrollable-card {
-    max-height: 600px;
+    max-height: 550px;
 }
 
 .scrollable-card .scrollable-body {
-    max-height: 400px;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: none;
@@ -379,17 +407,11 @@
 /* Ensure Yuktdhara card grows with content */
 .yuktdhara-card .card-body {
     min-height: 300px;
+    max-height: 500px;
 }
 
-/* Search input styling */
-.search-input {
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem;
-}
-
-.search-input:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+.scrollable-card .card-body {
+    max-height: 500px;
 }
 
 /* Hidden items for search */
@@ -416,6 +438,13 @@
         order: -1;
     }
 }
+
+#clusters-container label{
+    cursor: not-allowed;
+}
+#clusters-container:hover{
+    cursor: not-allowed;
+}
 </style>
 
 <!-- Loader markup -->
@@ -427,7 +456,12 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const FILTER_ENDPOINT = '/dashboard/activity_identification/filter';
+    const SEARCH_ENDPOINT = '/dashboard/activity_identification/search';
     let allSelections = new Set(); // Track all selections (manual + auto)
+
+    const CHECKBOX_GROUPS = new Set(['clusters', 'ridges', 'slopes', 'water_works', 'location_specifics']);
+    const LOCKED_GROUPS = new Set(['clusters']);
+    const STACKED_GROUPS = new Set(['location_specifics', 'major_scheduled_category', 'work_types', 'permissible_works']);
 
     // Map filter groups to display fields
     const GROUP_TO_DISPLAY_FIELD = {
@@ -448,7 +482,25 @@ document.addEventListener('DOMContentLoaded', () => {
         activity_types: 'activities-container',
         work_types: 'work-types-container',
         permissible_works: 'permissible-works-container',
-        location_specifics: 'land-types-container'
+        location_specifics: 'land-types-container',
+        ridges: 'ridges-container',
+        clusters: 'clusters-container',
+        slopes: 'slopes-container',
+        water_works: 'water-works-container'
+    };
+
+    const LABEL_FIELDS = {
+        categories: 'name',
+        major_scheduled_category: 'name',
+        beneficiaries: 'name',
+        activity_types: 'short_name',
+        work_types: 'name',
+        permissible_works: 'name',
+        location_specifics: 'name',
+        ridges: 'name',
+        clusters: 'name',
+        slopes: 'name',
+        water_works: 'name'
     };
 
     // Map groups to count elements
@@ -457,6 +509,31 @@ document.addEventListener('DOMContentLoaded', () => {
         work_types: 'work-types-count',
         permissible_works: 'permissible-works-count',
         location_specifics: 'land-types-count'
+    };
+
+    const filterSnapshot = {};
+    const SEARCH_TARGET_GROUPS = ['permissible_works', 'work_types', 'major_scheduled_category'];
+    let activeSearchResult = null;
+    let activeSearchTerm = '';
+    let searchDebounceTimer = null;
+    let currentSearchAbort = null;
+    let permissibleSearchInput = null;
+
+    const SUPPRESSED_AUTO = {
+        fill: new Set(),
+        select: new Set()
+    };
+
+    const suppressGroup = (group) => {
+        if (!group) return;
+        SUPPRESSED_AUTO.fill.add(group);
+        SUPPRESSED_AUTO.select.add(group);
+    };
+
+    const releaseGroup = (group) => {
+        if (!group) return;
+        SUPPRESSED_AUTO.fill.delete(group);
+        SUPPRESSED_AUTO.select.delete(group);
     };
 
     // Initialize display fields
@@ -485,35 +562,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Frontend-only search functionality
-    function setupSearch() {
-        const searchInputs = document.querySelectorAll('.search-input');
-        
-        searchInputs.forEach(input => {
-            input.addEventListener('input', (e) => {
-                const searchTerm = e.target.value.trim().toLowerCase();
-                const containerId = e.target.id.replace('-search', '-container');
-                const container = document.getElementById(containerId);
-                
-                if (!container) return;
-                
-                const radioRows = container.querySelectorAll('.radio-row');
-                
-                radioRows.forEach(row => {
-                    const label = row.querySelector('label');
-                    if (label) {
-                        const labelText = label.textContent.toLowerCase();
-                        if (searchTerm === '' || labelText.includes(searchTerm)) {
-                            row.classList.remove('search-hidden');
-                        } else {
-                            row.classList.add('search-hidden');
-                        }
-                    }
-                });
-            });
-        });
-    }
-
     // Helper functions
     const getLabelText = (input) => input.getAttribute('data-label') || '';
 
@@ -533,12 +581,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 data.labels.forEach((label, index) => {
                     const badge = document.createElement('span');
                     badge.className = 'filter-badge';
-                    badge.innerHTML = `
-                        ${label}
-                        <button type="button" class="remove-filter" data-group="${group}" data-id="${data.ids[index]}" aria-label="Remove ${label} filter">
-                            ×
-                        </button>
-                    `;
+                    if (LOCKED_GROUPS.has(group)) {
+                        badge.textContent = label;
+                        badge.classList.add('locked-filter');
+                    } else {
+                        badge.innerHTML = `
+                            ${label}
+                            <button type="button" class="remove-filter" data-group="${group}" data-id="${data.ids[index]}" aria-label="Remove ${label} filter">
+                                ×
+                            </button>
+                        `;
+                    }
                     appliedFiltersContainer.appendChild(badge);
                 });
             }
@@ -551,12 +604,16 @@ document.addEventListener('DOMContentLoaded', () => {
     appliedFiltersContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-filter')) {
             const group = e.target.getAttribute('data-group');
+            if (LOCKED_GROUPS.has(group)) {
+                return;
+            }
             const id = e.target.getAttribute('data-id');
             
             const radioBtn = document.querySelector(`input[data-group="${group}"][data-id="${id}"]`);
             if (radioBtn) {
                 radioBtn.checked = false;
                 allSelections.delete(`${group}_${id}`);
+                suppressGroup(group);
                 onChange();
             }
         }
@@ -568,6 +625,24 @@ document.addEventListener('DOMContentLoaded', () => {
             input.checked = false;
         });
         allSelections.clear();
+        SUPPRESSED_AUTO.fill.clear();
+        SUPPRESSED_AUTO.select.clear();
+
+        if (permissibleSearchInput) {
+            permissibleSearchInput.value = '';
+        }
+        activeSearchResult = null;
+        activeSearchTerm = '';
+        if (searchDebounceTimer) {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = null;
+        }
+        if (currentSearchAbort) {
+            currentSearchAbort.abort();
+            currentSearchAbort = null;
+        }
+        restoreSearchTargets({ skipDisplayUpdate: true });
+
         onChange();
     });
 
@@ -586,8 +661,11 @@ document.addEventListener('DOMContentLoaded', () => {
         radios.forEach(input => {
             const group = input.getAttribute('data-group');
             if (input.checked) {
-                result[group].ids = [parseInt(input.getAttribute('data-id'))];
-                result[group].labels = [getLabelText(input)];
+                const id = parseInt(input.getAttribute('data-id'), 10);
+                if (!Number.isNaN(id)) {
+                    result[group].ids.push(id);
+                    result[group].labels.push(getLabelText(input));
+                }
             }
         });
         
@@ -613,90 +691,188 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // Update radio button groups for first row (btn-group)
-    const updateBtnGroup = (group, items, labelField) => {
-        const container = document.getElementById(GROUP_TO_CONTAINER[group]);
+    const buildDisplayLabel = (rawValue) => {
+        if (!rawValue) return '';
+        const text = rawValue.toString();
+        return text.charAt(0).toUpperCase() + text.slice(1);
+    };
+
+    const renderGroup = (group, items, labelField) => {
+        const containerId = GROUP_TO_CONTAINER[group];
+        if (!containerId) return;
+
+        const container = document.getElementById(containerId);
         if (!container) return;
 
-        let currentSelection = null;
-        const existingInput = container.querySelector('input.btn-check:checked');
-        if (existingInput) {
-            currentSelection = parseInt(existingInput.getAttribute('data-id'));
-        }
+        const previouslyChecked = new Set(
+            Array.from(container.querySelectorAll('input.btn-check:checked'))
+                .map(input => parseInt(input.getAttribute('data-id'), 10))
+                .filter(id => !Number.isNaN(id))
+        );
+
+        const previousSelectionKeys = [];
+        allSelections.forEach(key => {
+            if (key.startsWith(`${group}_`)) {
+                previousSelectionKeys.push(key);
+            }
+        });
 
         container.innerHTML = '';
+        const stamp = Date.now();
+        const isStacked = STACKED_GROUPS.has(group);
+        const inputType = CHECKBOX_GROUPS.has(group) ? 'checkbox' : 'radio';
+        const labelKey = labelField || LABEL_FIELDS[group] || 'name';
+
+        const newlyCheckedIds = new Set();
 
         items.forEach((item, index) => {
-            const inputId = `btn${item[labelField]}${index}_${Date.now()}`;
-            const isChecked = currentSelection === item.id;
-            const isDisabled = item.disabled || false;
-            
+            const labelValue = buildDisplayLabel(item[labelKey] ?? item.name ?? '');
+            const identifier = `${group}_${stamp}_${index}`;
+            const inputId = `btn${identifier}`;
+            const optionId = parseInt(item.id, 10);
+            if (Number.isNaN(optionId)) {
+                return;
+            }
+            const wasChecked = previouslyChecked.has(optionId);
+            const isDisabled = Boolean(item.disabled);
+            const isLocked = LOCKED_GROUPS.has(group);
+            const shouldCheck = wasChecked && !isDisabled;
+
             const input = document.createElement('input');
-            input.type = 'radio';
+            input.type = inputType;
             input.className = 'btn-check';
             input.name = group;
             input.id = inputId;
             input.autocomplete = 'off';
-            input.value = item.id;
-            input.setAttribute('data-id', item.id);
+            input.value = optionId;
+            input.setAttribute('data-id', optionId);
             input.setAttribute('data-group', group);
-            input.setAttribute('data-label', item[labelField].charAt(0).toUpperCase() + item[labelField].slice(1));
-            input.checked = isChecked && !isDisabled;
-            input.disabled = isDisabled;
+            input.setAttribute('data-label', labelValue);
+            input.checked = shouldCheck;
+            input.disabled = isLocked || isDisabled;
+
+            if (input.checked) {
+                newlyCheckedIds.add(optionId);
+            }
 
             const label = document.createElement('label');
-            label.className = 'btn btn-outline-dark btn-sm text-center';
+            label.className = isStacked
+                ? 'btn btn-outline-dark btn-sm full-width-label'
+                : 'btn btn-outline-dark btn-sm text-center';
             label.setAttribute('for', inputId);
-            label.textContent = item[labelField].charAt(0).toUpperCase() + item[labelField].slice(1);
+            label.textContent = labelValue;
 
-            container.appendChild(input);
-            container.appendChild(label);
+            label.classList.add('btn-text-scroll');
+
+            if (isDisabled && !isLocked) {
+                label.classList.add('btn-disabled');
+            }
+
+            if (isStacked) {
+                const row = document.createElement('div');
+                row.className = 'radio-row';
+                row.appendChild(input);
+                row.appendChild(label);
+                container.appendChild(row);
+            } else {
+                container.appendChild(input);
+                container.appendChild(label);
+            }
+        });
+
+        const newSelectionKeys = new Set();
+        newlyCheckedIds.forEach(id => {
+            const key = `${group}_${id}`;
+            newSelectionKeys.add(key);
+            allSelections.add(key);
+        });
+
+        previousSelectionKeys.forEach(key => {
+            if (!newSelectionKeys.has(key)) {
+                allSelections.delete(key);
+            }
         });
     };
 
-    // Update radio button groups for second row (radio-row)
-    const updateRadioGroup = (group, items, labelField) => {
-        const container = document.getElementById(GROUP_TO_CONTAINER[group]);
-        if (!container) return;
+    const storeSnapshot = (group, items, count) => {
+        filterSnapshot[group] = {
+            items: items.map(item => ({ ...item })),
+            count: typeof count === 'number'
+                ? count
+                : items.filter(opt => !opt.disabled).length
+        };
 
-        let currentSelection = null;
-        const existingInput = container.querySelector('input.btn-check:checked');
-        if (existingInput) {
-            currentSelection = parseInt(existingInput.getAttribute('data-id'));
+        const effectiveCount = filterSnapshot[group].count;
+        if (effectiveCount === 0 || effectiveCount > 1) {
+            releaseGroup(group);
         }
+    };
 
-        container.innerHTML = '';
+    const applySearchResult = (payload, { skipDisplayUpdate = false } = {}) => {
+        if (!payload) return;
 
-        items.forEach((item, index) => {
-            const inputId = `btn${item[labelField]}${index}_${Date.now()}`;
-            const isChecked = currentSelection === item.id;
-            const isDisabled = item.disabled || false;
-            
-            const radioRow = document.createElement('div');
-            radioRow.className = 'radio-row';
-            
-            const input = document.createElement('input');
-            input.type = 'radio';
-            input.className = 'btn-check';
-            input.name = group;
-            input.id = inputId;
-            input.autocomplete = 'off';
-            input.value = item.id;
-            input.setAttribute('data-id', item.id);
-            input.setAttribute('data-group', group);
-            input.setAttribute('data-label', item[labelField].charAt(0).toUpperCase() + item[labelField].slice(1));
-            input.checked = isChecked && !isDisabled;
-            input.disabled = isDisabled;
+        SEARCH_TARGET_GROUPS.forEach(group => {
+            if (!payload[group]) return;
+            const labelField = LABEL_FIELDS[group] || 'name';
 
-            const label = document.createElement('label');
-            label.className = 'btn btn-outline-dark btn-sm full-width-label';
-            label.setAttribute('for', inputId);
-            label.textContent = item[labelField].charAt(0).toUpperCase() + item[labelField].slice(1);
+            const baseline = filterSnapshot[group];
+            const baseEnabled = baseline ? new Set(baseline.items.filter(opt => !opt.disabled).map(opt => opt.id)) : null;
+            const clonedItems = payload[group].map(item => {
+                const option = { ...item };
+                if (baseEnabled && !baseEnabled.has(option.id)) {
+                    option.disabled = true;
+                }
+                return option;
+            });
 
-            radioRow.appendChild(input);
-            radioRow.appendChild(label);
-            container.appendChild(radioRow);
+            renderGroup(group, clonedItems, labelField);
+
+            const countId = GROUP_TO_COUNT[group];
+            if (countId) {
+                const enabledCount = clonedItems.filter(opt => !opt.disabled).length;
+                updateCount(countId, enabledCount);
+            }
         });
+
+        if (!skipDisplayUpdate) {
+            const selections = collectSelections();
+            updateDisplayFields(selections);
+            updateAppliedFilters(selections);
+        }
+    };
+
+    const restoreSearchTargets = ({ skipDisplayUpdate = false } = {}) => {
+        SEARCH_TARGET_GROUPS.forEach(group => {
+            const snapshot = filterSnapshot[group];
+            if (!snapshot) return;
+            const labelField = LABEL_FIELDS[group] || 'name';
+            const clonedItems = snapshot.items.map(item => ({ ...item }));
+            renderGroup(group, clonedItems, labelField);
+
+            const countId = GROUP_TO_COUNT[group];
+            if (countId) {
+                updateCount(countId, snapshot.count);
+            }
+        });
+
+        if (!skipDisplayUpdate) {
+            const selections = collectSelections();
+            updateDisplayFields(selections);
+            updateAppliedFilters(selections);
+        }
+    };
+
+    const finalizeSync = (autoFillData = {}) => {
+        const updatedSelections = collectSelections();
+        updateDisplayFields(updatedSelections, autoFillData);
+        updateAppliedFilters(updatedSelections);
+
+        if (activeSearchResult && activeSearchTerm.length >= 3) {
+            applySearchResult(activeSearchResult, { skipDisplayUpdate: true });
+            const selectionsAfterSearch = collectSelections();
+            updateDisplayFields(selectionsAfterSearch, autoFillData);
+            updateAppliedFilters(selectionsAfterSearch);
+        }
     };
 
     // Update counts
@@ -709,44 +885,80 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update dynamic elements
     const updateDynamicElements = (data) => {
-        // First row updates (btn-group style)
-        if (data.categories) {
-            updateBtnGroup('categories', data.categories, 'name');
-        }
-        
-        if (data.beneficiaries) {
-            updateBtnGroup('beneficiaries', data.beneficiaries, 'name');
-        }
-        
-        if (data.activity_types) {
-            updateBtnGroup('activity_types', data.activity_types, 'short_name');
-        }
+        const groupsToUpdate = [
+            ['categories', 'name'],
+            ['beneficiaries', 'name'],
+            ['activity_types', 'short_name'],
+            ['major_scheduled_category', 'name'],
+            ['work_types', 'name'],
+            ['permissible_works', 'name'],
+            ['location_specifics', 'name'],
+            ['ridges', 'name'],
+            ['slopes', 'name'],
+            ['water_works', 'name'],
+            ['clusters', 'name'],
+        ];
 
-        // Second row updates (radio-row style)
+        groupsToUpdate.forEach(([group, labelField]) => {
+            if (data[group]) {
+                const items = data[group].map(item => ({ ...item }));
+                renderGroup(group, items, labelField);
+                storeSnapshot(group, items, data[`${group}_count`]);
+            }
+        });
+
         if (data.major_scheduled_category) {
-            updateRadioGroup('major_scheduled_category', data.major_scheduled_category, 'name');
             updateCount('major-scheduled-count', data.major_scheduled_category_count);
         }
-        
+
         if (data.work_types) {
-            updateRadioGroup('work_types', data.work_types, 'name');
             updateCount('work-types-count', data.work_types_count);
         }
-        
+
         if (data.permissible_works) {
-            updateRadioGroup('permissible_works', data.permissible_works, 'name');
             updateCount('permissible-works-count', data.permissible_works_count);
         }
 
         if (data.location_specifics) {
-            updateRadioGroup('location_specifics', data.location_specifics, 'name');
             updateCount('land-types-count', data.location_specifics_count);
         }
+    };
+
+    const handleAutoSelect = (autoSelectData) => {
+        Object.entries(autoSelectData).forEach(([group, ids]) => {
+            if (SUPPRESSED_AUTO.select.has(group)) {
+                return;
+            }
+            const normalizedIds = Array.isArray(ids) ? ids : [ids];
+            const targetIds = new Set(
+                normalizedIds
+                    .map(value => parseInt(value, 10))
+                    .filter(value => !Number.isNaN(value))
+            );
+            const inputs = document.querySelectorAll(`input[data-group="${group}"]`);
+
+            inputs.forEach(input => {
+                const id = parseInt(input.getAttribute('data-id'), 10);
+                if (Number.isNaN(id)) return;
+                const shouldCheck = targetIds.has(id);
+                input.checked = shouldCheck;
+
+                const key = `${group}_${id}`;
+                if (shouldCheck) {
+                    allSelections.add(key);
+                } else {
+                    allSelections.delete(key);
+                }
+            });
+        });
     };
 
     // Handle auto-fill
     const handleAutoFill = (autoFillData) => {
         Object.entries(autoFillData).forEach(([group, data]) => {
+            if (SUPPRESSED_AUTO.fill.has(group)) {
+                return;
+            }
             const currentRadio = document.querySelector(`input[data-group="${group}"]:checked`);
             if (!currentRadio) {
                 const radioToSelect = document.querySelector(`input[data-group="${group}"][data-id="${data.id}"]`);
@@ -795,19 +1007,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     const result = await response.json();
                     if (result.success) {
                         updateDynamicElements(result.data);
-                        
-                        const autoFill = result.data.auto_fill;
-                        if (autoFill && Object.keys(autoFill).length > 0) {
+
+                        const autoSelect = result.data.auto_select || {};
+                        const autoFill = result.data.auto_fill || {};
+                        const hasAutoSelect = Object.keys(autoSelect).length > 0;
+                        const hasAutoFill = Object.keys(autoFill).length > 0;
+
+                        const performFinalize = () => {
+                            finalizeSync(autoFill);
+                        };
+
+                        if (hasAutoSelect || hasAutoFill) {
                             setTimeout(() => {
-                                handleAutoFill(autoFill);
-                                const updatedSelections = collectSelections();
-                                updateDisplayFields(updatedSelections, autoFill);
-                                updateAppliedFilters(updatedSelections);
-                            }, 100);
+                                if (hasAutoSelect) {
+                                    handleAutoSelect(autoSelect);
+                                }
+                                if (hasAutoFill) {
+                                    handleAutoFill(autoFill);
+                                }
+                                performFinalize();
+                            }, 0);
+                        } else {
+                            performFinalize();
                         }
-                        
-                        // Re-setup search after dynamic updates
-                        setupSearch();
                     } else {
                         console.error('Filter error:', result.error);
                     }
@@ -881,21 +1103,107 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('change', (evt) => {
         const target = evt.target;
         if (target && target.matches('input.btn-check[data-group]')) {
+            const key = `${target.getAttribute('data-group')}_${target.getAttribute('data-id')}`;
             if (target.checked) {
-                const key = `${target.getAttribute('data-group')}_${target.getAttribute('data-id')}`;
                 allSelections.add(key);
+                releaseGroup(target.getAttribute('data-group'));
+            } else {
+                allSelections.delete(key);
+                suppressGroup(target.getAttribute('data-group'));
             }
             onChange();
         }
     });
 
-    // Initialize search functionality
-    setupSearch();
+    const performSearch = async (term) => {
+        if (currentSearchAbort) {
+            currentSearchAbort.abort();
+        }
+
+        currentSearchAbort = new AbortController();
+
+        try {
+            showLoader();
+
+            const response = await fetch(SEARCH_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                signal: currentSearchAbort.signal,
+                body: JSON.stringify({ search: term })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    activeSearchResult = result.data || {};
+                    applySearchResult(activeSearchResult);
+                } else {
+                    console.error('Search error:', result.error);
+                    activeSearchResult = null;
+                    restoreSearchTargets();
+                }
+            } else {
+                console.error('Search HTTP error:', response.status);
+                activeSearchResult = null;
+                restoreSearchTargets();
+            }
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                console.error('Search fetch error:', error);
+                activeSearchResult = null;
+                restoreSearchTargets();
+            }
+        } finally {
+            hideLoader();
+            currentSearchAbort = null;
+        }
+    };
+
+    permissibleSearchInput = document.getElementById('permissible-search');
+    if (permissibleSearchInput) {
+        permissibleSearchInput.addEventListener('input', (evt) => {
+            const term = evt.target.value.trim();
+            activeSearchTerm = term;
+
+            if (searchDebounceTimer) {
+                clearTimeout(searchDebounceTimer);
+            }
+
+            if (term.length === 0) {
+                activeSearchResult = null;
+                if (currentSearchAbort) {
+                    currentSearchAbort.abort();
+                    currentSearchAbort = null;
+                }
+                restoreSearchTargets();
+                return;
+            }
+
+            if (term.length < 3) {
+                activeSearchResult = null;
+                if (currentSearchAbort) {
+                    currentSearchAbort.abort();
+                    currentSearchAbort = null;
+                }
+                restoreSearchTargets();
+                return;
+            }
+
+            searchDebounceTimer = setTimeout(() => {
+                performSearch(term);
+            }, 400);
+        });
+    }
 
     // Initial sync
     const initialSelections = collectSelections();
     updateDisplayFields(initialSelections);
     updateAppliedFilters(initialSelections);
+    debouncedFilter(initialSelections);
 });
 </script>
 {% endblock %}
