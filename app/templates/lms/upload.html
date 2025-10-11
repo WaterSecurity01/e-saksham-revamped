@@ -8,7 +8,7 @@
                     <h4 class="card-title mb-0"> Upload SCORM (Zip File) </h4>
                 </div>
             <div class="card-body">
-                <form id="uploadForm" action="{{url_for('routes.upload')}}" method="post" enctype="multipart/form-data">
+                <form id="uploadForm" action="{{url_for('admin.upload_course')}}" method="post" enctype="multipart/form-data">
                     {{ form.hidden_tag() }}
                     <div class="mb-3">
                         <label for="scorm_file" class="form-label">Upload File</label>
@@ -20,8 +20,16 @@
                         <label for="floatingTextarea">Course Title</label>
                     </div>
                     <div class="form-floating mb-3">
+                        {{ form.short_name(class="form-control form-control-sm") }}
+                        <label for="floatingTextarea">Short Name</label>
+                    </div>
+                    <div class="form-floating mb-3">
                         {{ form.description(class="form-control", style="min-height:100px;") }}
                         <label for="floatingTextarea">Course Description</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        {{ form.topics(class="form-control form-control-sm") }}
+                        <label for="floatingTextarea">Topics (Comma separated)</label>
                     </div>
                     <div class="d-grid">
                         {{ form.submit(class="btn btn-primary") }}

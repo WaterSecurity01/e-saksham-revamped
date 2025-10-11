@@ -1,20 +1,32 @@
 import base64
 import csv
+from functools import wraps
 import logging
 import os
 import random
+import re
 
-from flask import current_app, json, session, url_for
+from flask import abort, current_app, json, jsonify, request, session
 import urllib
+
+from flask_login import current_user
+from app.classes.logging import get_route_loggers
 from app.db import db
-from app.models import State_UT, District, Block, ActivityLog, User
+from app.models import State_UT, District, Block, User
 
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5
 
 from app.models.visit_count import VisitCount
 
-    
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin:
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
+
 def create_db(app):
     directory_path = os.path.dirname(__file__).split("/classes")[0]
     with app.app_context():
@@ -227,7 +239,7 @@ def get_lrs_query_string(learner, base_url):
         }
 
         # Convert the Python dictionary to a JSON string
-        json_string = json.dumps(correct_payload)
+        json_string = json.dumps(correct_payload, separators=(",", ":"))
 
         # URL-encode the JSON string
         encoded_string = urllib.parse.quote(json_string, safe='')
@@ -240,64 +252,6 @@ def get_lrs_query_string(learner, base_url):
     except Exception as e:
         return None
     
-def setup_logger(name, log_level=logging.INFO):
-    """
-    Set up professional logging with rotation to prevent disk space issues
-    """
-    
-    # Create logs directory if it doesn't exist
-    log_dir = 'logs'
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-    
-    # Create logger
-    logger = logging.getLogger(name)
-    logger.setLevel(log_level)
-    
-    # Prevent duplicate handlers
-    if logger.handlers:
-        return logger
-    
-    # Create formatters
-    detailed_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s'
-    )
-    
-    simple_formatter = logging.Formatter(
-        '%(asctime)s - %(levelname)s - %(message)s'
-    )
-    
-    # File handler with rotation (max 10MB per file, keep 5 files)
-    file_handler = logging.handlers.RotatingFileHandler(
-        filename=os.path.join(log_dir, 'app.log'),
-        maxBytes=10*1024*1024,  # 10MB
-        backupCount=5,
-        encoding='utf-8'
-    )
-    file_handler.setLevel(logging.INFO)
-    file_handler.setFormatter(detailed_formatter)
-    
-    # Error file handler with rotation
-    error_handler = logging.handlers.RotatingFileHandler(
-        filename=os.path.join(log_dir, 'error.log'),
-        maxBytes=10*1024*1024,  # 10MB
-        backupCount=3,
-        encoding='utf-8'
-    )
-    error_handler.setLevel(logging.ERROR)
-    error_handler.setFormatter(detailed_formatter)
-    
-    # Console handler for development
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(simple_formatter)
-    
-    # Add handlers to logger
-    logger.addHandler(file_handler)
-    logger.addHandler(error_handler)
-    logger.addHandler(console_handler)
-    
-    return logger
 
 # Function to convert number to a string with seven digits
 def convert_to_seven_digits(number):
@@ -318,3 +272,134 @@ def get_or_create_visit_count():
         # error_logger.error(f"Failed to read/initialize visit count: {ex}")
         return 0
     
+
+
+def extract_youtube_video_id_from_any_url(url):
+    """
+    Extract video ID from any YouTube URL format
+    """
+    if not url:
+        return None
+    
+    # Various YouTube URL patterns
+    patterns = [
+        # Regular watch URLs with parameters
+        r'(?:youtube\.com/watch\?v=)([a-zA-Z0-9_-]{11})',
+        # Shorts URLs
+        r'(?:youtube\.com/shorts/)([a-zA-Z0-9_-]{11})',
+        # Embed URLs
+        r'(?:youtube\.com/embed/)([a-zA-Z0-9_-]{11})',
+        # Short URLs (youtu.be)
+        r'(?:youtu\.be/)([a-zA-Z0-9_-]{11})',
+        # Mobile URLs
+        r'(?:m\.youtube\.com/watch\?v=)([a-zA-Z0-9_-]{11})'
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+    
+    return None
+
+def convert_to_embed_url(url):
+    """
+    Convert any YouTube URL to embed format
+    """
+    if not url:
+        return None
+    
+    video_id = extract_youtube_video_id_from_any_url(url)
+    if not video_id:
+        return None
+    
+    return f"https://www.youtube.com/embed/{video_id}"
+
+def is_youtube_shorts_url(url):
+    """
+    Check if the URL is a YouTube Shorts URL
+    """
+    if not url:
+        return False
+    
+    return '/shorts/' in url or 'youtube.com/shorts' in url
+
+def validate_youtube_embed_url(url):
+    """
+    Validate if the provided URL is a valid YouTube embed URL
+    """
+    if not url:
+        return False
+    
+    # YouTube embed URL patterns (more flexible)
+    embed_patterns = [
+        r'^https://www\.youtube\.com/embed/[a-zA-Z0-9_-]+',
+        r'^https://youtube\.com/embed/[a-zA-Z0-9_-]+',
+        r'^http://www\.youtube\.com/embed/[a-zA-Z0-9_-]+',
+        r'^http://youtube\.com/embed/[a-zA-Z0-9_-]+',
+    ]
+    
+    for pattern in embed_patterns:
+        if re.match(pattern, url):
+            return True
+    
+    return False
+
+def extract_youtube_video_id(embed_url):
+    """
+    Extract video ID from YouTube embed URL
+    """
+    if not embed_url:
+        return None
+    
+    # Pattern to extract video ID from embed URL
+    pattern = r'(?:youtube\.com/embed/)([a-zA-Z0-9_-]+)'
+    match = re.search(pattern, embed_url)
+    
+    if match:
+        return match.group(1)
+    
+    return None
+
+def validate_any_youtube_url(url):
+    """
+    Validate if the provided URL is any valid YouTube URL format
+    """
+    if not url:
+        return False
+    
+    # Check if it's a YouTube domain
+    youtube_domains = [
+        'youtube.com',
+        'www.youtube.com', 
+        'm.youtube.com',
+        'youtu.be'
+    ]
+    
+    # Check if URL contains any YouTube domain
+    has_youtube_domain = any(domain in url.lower() for domain in youtube_domains)
+    if not has_youtube_domain:
+        return False
+    
+    # Try to extract video ID - if successful, it's a valid YouTube URL
+    video_id = extract_youtube_video_id_from_any_url(url)
+    return video_id is not None
+
+
+def orm_to_dict_list(queryset, fields):
+    """Convert ORM objects into list of dicts with only required fields."""
+    return [{f: getattr(obj, f) for f in fields} for obj in queryset]
+
+
+def _build_enriched_options(model, fields, enabled_ids):
+    """Return ordered option dictionaries including disabled flags for search results."""
+    fetch_fields = set(fields) | {"id"}
+    options = []
+
+    for obj in model.query.order_by(model.id).all():
+        option = {field: getattr(obj, field) for field in fetch_fields}
+        option["disabled"] = obj.id not in enabled_ids
+        options.append(option)
+
+    options.sort(key=lambda record: (record["disabled"], record["id"]))
+    return options

@@ -1,0 +1,715 @@
+{% extends 'base.html' %}
+{% block title %}Charts Dashboard{% endblock %}
+{% block content %}
+<div class="container-fluid m-0 p-0 bg-white justify-content-center" style="width: 100%; display: flex;">
+    <div class="row vh-100 mb-5" style="width: 100%;">
+        <div class="col-12">
+            <section id="graphSection">
+                <div class="container mt-3">
+                    <!-- Breadcrumb Navigation -->
+                    <nav class="mt-2" aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-2 text-secondary" id="breadcrumb">
+                            <li class="breadcrumb-item active">INDIA</li>
+                        </ol>
+                    </nav>
+                    <div class="row gx-3">
+                        <div class="col-lg-4 col-md-6 col-sm-12">
+                            <div class="card mb-2">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div class="card-title fs-4">Total Users</div>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center bg-secondary text-dark bg-opacity-10  fs-2"
+                                            style="height:64px; width:64px;">
+                                            <i class="fa-solid fa-users"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <div class="display-6" id="totalUsers">{{card_data.total_users}}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6 col-sm-12">
+                            <div class="card mb-2">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div class="card-title fs-4">Certificates Issued</div>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center bg-secondary text-dark bg-opacity-10  fs-2"
+                                            style="height:64px; width:64px;">
+                                            <i class="fa-solid fa-scroll"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <div class="display-6" id="certificatesIssued">
+                                                {{card_data.certified_users}}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6 col-sm-12">
+                            <div class="card mb-2">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div class="card-title fs-4">Issuance Percentage</div>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center bg-secondary text-dark bg-opacity-10  fs-2"
+                                            style="height:64px; width:64px;">
+                                            <i class="fa-solid fa-percent"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <div class="display-6" id="issuancePercentage">
+                                                {{card_data.issuance_percentage}}%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row gx-3 mt-3">
+                        <div class="col-lg-7 col-md-12">
+                            <div class="card mb-2 h-100">
+                                <div class="card-body">
+                                    <div class="container-fluid">
+                                        <div class="row">
+                                            <div class="col-12">
+
+                                                <div class="d-flex justify-content-between">
+                                                    <div class="card-title fs-4">User Distribution Drilldown</div>
+                                                </div>
+                                                <div class="row d-flex justify-content-between mb-2">
+                                                    <div class="col-6">
+                                                        <!-- Back Button -->
+                                                        <div id="backButtonContainer" class="back-btn"
+                                                            style="display: none;">
+                                                            <button class="btn btn-secondary btn-sm no-loader"
+                                                                onclick="goBack()">
+                                                                ← Back
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <div class="d-grid justify-content-end align-items-end mb-2">
+                                                            <a href="{{ url_for('dashboard.drill_chart') }}"
+                                                                class="btn btn-sm btn-outline-dark">
+                                                                See All States
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div id="chartContainer">
+                                                    <div id="barChart" style="width: 100%;max-height:400px; height: 300px;"></div>
+                                                </div>
+                                                <!-- Table Container -->
+                                                <div id="tableContainer" class="table-container" style="display: none; max-height: 300px;">
+                                                    <div id="tableContent">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-5 col-md-12">
+                            <div class="card mb-2 h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div class="card-title fs-4">Overall Distribution</div>
+
+                                    </div>
+                                    <div id="pieChart" style="width: 100%;max-height:400px; height: 300px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+<input type="hidden" name="pie_chart_data" id="pieChartData" value='{{ pie_chart_data | tojson | safe }}'>
+<input type="hidden" name="bar_chart_data" id="barChartData" value='{{ bar_chart_data | tojson | safe }}'>
+
+<script src="{{url_for('static',filename='js/echarts.min.js')}}"></script>
+<script>
+    // Store pie chart instance to update later
+    var piechartDom = document.getElementById('pieChart');
+    var myPieChart = echarts.init(piechartDom);
+
+    // Utility to update pie chart
+    function updatePieChart(pieChartData) {
+        var option = {
+            tooltip: { trigger: 'item' },
+            legend: { bottom: 0 },
+            series: [{
+                name: 'Certificates',
+                type: 'pie',
+                radius: '60%',
+                data: [
+                    { value: pieChartData.issued_total, name: 'Issued' },
+                    { value: pieChartData.non_issued_total, name: 'Not Issued' }
+                ],
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            }]
+        };
+        myPieChart.setOption(option, true);
+    }
+
+    // Utility to update cards
+    function updateCards(cardData) {
+        document.getElementById('totalUsers').textContent = cardData.total_users;
+        document.getElementById('certificatesIssued').textContent = cardData.certified_users;
+        document.getElementById('issuancePercentage').textContent = cardData.issuance_percentage + '%';
+    }
+
+    // On page load, set initial data
+    const initialPieChartData = JSON.parse(document.getElementById("pieChartData").value);
+    const initialCardData = {
+        total_users: "{{card_data.total_users}}",
+        certified_users: "{{card_data.certified_users}}",
+        issuance_percentage: "{{card_data.issuance_percentage}}"
+    };
+    updatePieChart(initialPieChartData);
+    updateCards(initialCardData);
+
+</script>
+<script>
+    // ECharts bar chart with ID-based drilldown mapping to avoid duplicate short-name collisions
+
+    var chart = echarts.init(document.getElementById('barChart'));
+    var navigationStack = [];
+    var currentLevel = 'states';
+    const barChartData = JSON.parse(document.getElementById("barChartData").value);
+    var currentDrill = { stateId: 0, districtId: 0, blockId: 0 };
+    console.log('Pie Chart Data:', initialPieChartData);
+    console.log('Bar Chart Data:', barChartData);
+
+    // These hold the current level's ordered list (kept in same order as xAxis)
+    var currentStatesList = [];
+    var currentDistrictsList = [];
+    var currentBlocksList = [];
+
+    function fetchDashboardData(stateId, districtId, blockId) {
+        var url = '/api/charts_dashboard_data';
+        fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ state_id: stateId, district_id: districtId, block_id: blockId })
+        })
+            .then(resp => resp.json())
+            .then(data => {
+                // hideLoader?.();
+                updateCards(data.card_data);
+                updatePieChart(data.pie_chart_data);
+            })
+            .catch(err => {
+                // hideLoader?.();
+                console.error('Failed to update dashboard cards/pie chart:', err);
+            });
+    }
+
+    function syncDashboard(stateId, districtId, blockId) {
+        showLoader();
+        fetchDashboardData(stateId, districtId, blockId);
+        currentDrill.stateId = stateId;
+        currentDrill.districtId = districtId;
+        currentDrill.blockId = blockId;
+        hideLoader();
+    }
+
+    function updateBreadcrumb(items) {
+        const breadcrumb = document.getElementById('breadcrumb');
+        breadcrumb.innerHTML = '';
+        items.forEach((item, index) => {
+            const li = document.createElement('li');
+            li.className = index === items.length - 1 ? 'breadcrumb-item active text-secondary' : 'breadcrumb-item text-secondary';
+            li.textContent = item;
+            breadcrumb.appendChild(li);
+        });
+    }
+
+    function showBackButton() { document.getElementById('backButtonContainer').style.display = 'block'; }
+    function hideBackButton() { document.getElementById('backButtonContainer').style.display = 'none'; }
+    function showChart() {
+        document.getElementById('chartContainer').style.display = 'block';
+        document.getElementById('tableContainer').style.display = 'none';
+    }
+    function showTable() {
+        document.getElementById('chartContainer').style.display = 'none';
+        document.getElementById('tableContainer').style.display = 'block';
+    }
+
+    function tooltipFormatter(params) {
+        const p = Array.isArray(params) ? params[0] : params;
+        const d = p && p.data ? p.data : null;
+        const label = d && (d.full_name || d.label) ? (d.full_name || d.label) : (p.name || '');
+        return `${label}: ${p.value} users`;
+    }
+
+    function loadStates() {
+        currentLevel = 'states';
+        navigationStack = [];
+        hideBackButton();
+        showChart();
+        updateBreadcrumb(['INDIA']);
+        syncDashboard(0, 0, 0);
+
+        const states = barChartData.states || [];
+        // Keep list in the xAxis order
+        currentStatesList = states.slice();
+
+        chart.setOption({
+            tooltip: { trigger: 'axis', formatter: tooltipFormatter },
+            xAxis: {
+                type: 'category',
+                data: currentStatesList.map(d => d.short_name || d.name),
+                axisLabel: { rotate: 0 }
+            },
+            yAxis: { type: 'value', name: 'Number of Users' },
+            series: [{
+                type: 'bar',
+                // Provide objects so we can read ids on click via params.data
+                data: currentStatesList.map(d => ({
+                    value: d.value,
+                    id: d.id,
+                    label: d.short_name || d.name,
+                    full_name: d.name
+                })),
+                itemStyle: { color: '#0d6efd', borderRadius: [4, 4, 0, 0] },
+                emphasis: { itemStyle: { color: '#0056b3' } }
+            }]
+        });
+
+        chart.off('click');
+        chart.on('click', function (params) {
+            // Use index mapping instead of short_name
+            const idx = params.dataIndex;
+            const state = currentStatesList[idx];
+            if (state) {
+                navigationStack.push({ level: 'states', stateId: 0, districtId: 0, blockId: 0, stateName: 'INDIA' });
+                syncDashboard(state.id, 0, 0);
+                loadDistricts(state.id, state.name);
+            }
+        });
+        hideLoader();
+    }
+
+    function loadDistricts(stateId, stateName) {
+        currentLevel = 'districts';
+        showBackButton();
+        showChart();
+        updateBreadcrumb(['INDIA', stateName]);
+        syncDashboard(stateId, 0, 0);
+
+        const districtData = (barChartData.districts && barChartData.districts[stateId]) ? barChartData.districts[stateId] : [];
+        currentDistrictsList = districtData.slice();
+
+        chart.setOption({
+            tooltip: { trigger: 'axis', formatter: tooltipFormatter },
+            xAxis: {
+                type: 'category',
+                data: currentDistrictsList.map(d => d.short_name || d.name),
+                axisLabel: { rotate: 0, interval: 0 }
+            },
+            yAxis: { type: 'value', name: 'Number of Users' },
+            series: [{
+                type: 'bar',
+                data: currentDistrictsList.map(d => ({
+                    value: d.value,
+                    id: d.id,
+                    label: d.short_name || d.name,
+                    full_name: d.name
+                })),
+                itemStyle: { color: '#198754', borderRadius: [4, 4, 0, 0] },
+                emphasis: { itemStyle: { color: '#146c43' } }
+            }]
+        });
+
+        chart.off('click');
+        chart.on('click', function (params) {
+            const idx = params.dataIndex;
+            const district = currentDistrictsList[idx];
+            if (district) {
+                navigationStack.push({ level: 'districts', stateId: stateId, districtId: 0, blockId: 0, stateName: stateName });
+                syncDashboard(stateId, district.id, 0);
+                loadBlocks(district.id, district.name, stateName, stateId);
+            }
+        });
+        hideLoader();
+    }
+
+    function loadBlocks(districtId, districtName, stateName, stateId) {
+        currentLevel = 'blocks';
+        showBackButton();
+        showChart();
+        updateBreadcrumb(['INDIA', stateName, districtName]);
+        syncDashboard(stateId, districtId, 0);
+
+        const blockData = (barChartData.blocks && barChartData.blocks[districtId]) ? barChartData.blocks[districtId] : [];
+        currentBlocksList = blockData.slice();
+
+        chart.setOption({
+            tooltip: { trigger: 'axis', formatter: tooltipFormatter },
+            xAxis: {
+                type: 'category',
+                data: currentBlocksList.map(d => d.short_name || d.name),
+                axisLabel: { rotate: 0, interval: 0 }
+            },
+            yAxis: { type: 'value', name: 'Number of Users' },
+            series: [{
+                type: 'bar',
+                data: currentBlocksList.map(d => ({
+                    value: d.value,
+                    id: d.id,
+                    label: d.short_name || d.name,
+                    full_name: d.name
+                })),
+                itemStyle: { color: '#fd7e14', borderRadius: [4, 4, 0, 0] },
+                emphasis: { itemStyle: { color: '#e55100' } }
+            }]
+        });
+
+        chart.off('click');
+        chart.on('click', function (params) {
+            const idx = params.dataIndex;
+            const block = currentBlocksList[idx];
+            if (block) {
+                navigationStack.push({
+                    level: 'blocks',
+                    stateId: stateId,
+                    districtId: districtId,
+                    blockId: 0,
+                    stateName: stateName,
+                    districtName: districtName
+                });
+
+                syncDashboard(stateId, districtId, block.id);
+                loadUsers(block.id, block.name, districtName, stateName, stateId, districtId);
+            }
+        });
+        hideLoader();
+    }
+
+    // User table variables
+    let currentPage = 1;
+    const usersPerPage = 10;
+    let currentSortColumn = null;
+    let currentSortDirection = 'asc';
+    let currentUsers = [];
+    let currentBlockName = "";
+    let filteredUsers = [];
+
+    function loadUsers(blockId, blockName, districtName, stateName, stateId, districtId) {
+        currentLevel = 'users';
+        showBackButton();
+        showTable();
+        updateBreadcrumb(['INDIA', stateName, districtName, blockName]);
+        syncDashboard(stateId, districtId, blockId);
+
+        currentUsers = (barChartData.users && barChartData.users[blockId]) ? barChartData.users[blockId] : [];
+        currentBlockName = blockName;
+        currentPage = 1;
+        currentSortColumn = null;
+        currentSortDirection = 'asc';
+        window.currentSearchValue = '';
+        filteredUsers = [...currentUsers];
+        renderUserTable();
+        hideLoader();
+    }
+
+    function goBack() {
+        showLoader();
+        if (navigationStack.length === 0) {
+            syncDashboard(0, 0, 0);
+            loadStates();
+            return;
+        }
+
+        var previousState = navigationStack.pop();
+        if (!previousState) {
+            syncDashboard(0, 0, 0);
+            loadStates();
+            return;
+        }
+
+        switch (previousState.level) {
+            case 'states':
+                syncDashboard(0, 0, 0);
+                loadStates();
+                break;
+            case 'districts':
+                syncDashboard(previousState.stateId, 0, 0);
+                loadDistricts(previousState.stateId, previousState.stateName);
+                break;
+            case 'blocks':
+                syncDashboard(previousState.stateId, previousState.districtId, 0);
+                loadBlocks(previousState.districtId, previousState.districtName, previousState.stateName, previousState.stateId);
+                break;
+            case 'users':
+                syncDashboard(previousState.stateId, previousState.districtId, previousState.blockId);
+                loadUsers(previousState.blockId, previousState.blockName, previousState.districtName, previousState.stateName, previousState.stateId, previousState.districtId);
+                break;
+        }
+    }
+
+    // User table functions
+    function applySearchFilter() {
+        const searchVal = (window.currentSearchValue || "").toLowerCase();
+        if (searchVal) {
+            filteredUsers = currentUsers.filter(u =>
+                (u.name && u.name.toLowerCase().includes(searchVal)) ||
+                (u.email && u.email.toLowerCase().includes(searchVal)) ||
+                (u.course && u.course.toLowerCase().includes(searchVal))
+            );
+        } else {
+            filteredUsers = [...currentUsers];
+        }
+    }
+
+    function toSentenceCase(str) {
+        if (!str) return '';
+        str = str.toLowerCase();
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function applySorting() {
+        if (currentSortColumn !== null) {
+            filteredUsers.sort((a, b) => {
+                let valA, valB;
+                switch (currentSortColumn) {
+                    case 0: valA = (a.name || '').toLowerCase(); valB = (b.name || '').toLowerCase(); break;
+                    case 1: valA = (a.email || '').toLowerCase(); valB = (b.email || '').toLowerCase(); break;
+                    case 2: valA = (a.course || '').toLowerCase(); valB = (b.course || '').toLowerCase(); break;
+                    case 3: valA = new Date(a.timestamp); valB = new Date(b.timestamp); break;
+                    default: return 0;
+                }
+                if (valA < valB) return currentSortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+    }
+
+    function renderUserTable() {
+        const wasSearchFocused = document.activeElement && document.activeElement.id === 'searchInput';
+        const cursorPosition = wasSearchFocused ? document.activeElement.selectionStart : 0;
+
+        applySearchFilter();
+        applySorting();
+        const totalUsers = filteredUsers.length;
+        const totalPages = Math.ceil(totalUsers / usersPerPage);
+        if (currentPage > totalPages && totalPages > 0) {
+            currentPage = totalPages;
+        }
+        const startIndex = (currentPage - 1) * usersPerPage;
+        const paginatedUsers = filteredUsers.slice(startIndex, startIndex + usersPerPage);
+        const currentSearchValue = window.currentSearchValue || '';
+
+        let html = `
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="text-primary mb-0">Users in ${currentBlockName}</h5>
+        <small class="text-muted">Showing ${Math.min(startIndex + 1, totalUsers)}-${Math.min(startIndex + usersPerPage, totalUsers)} of ${totalUsers}</small>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <input type="text" class="form-control form-control-sm ms-1" 
+                   id="searchInput" 
+                   placeholder="🔍 Search by name, email or course..." 
+                   value="${currentSearchValue}">
+        </div>
+        <div class="col-md-6">
+            <div id="paginationContainer"></div>
+        </div>
+    </div>
+
+    <div id="tableWrapper" style="max-height:200px; overflow-y:auto; overflow-x:hidden;">
+        <table class="table table-striped table-hover table-sm mb-0" id="userTableData">
+            <thead class="">
+                <tr>
+                    <th onclick="sortTable(0)" 
+                        style="cursor:pointer; position:sticky; top:0; background:#cfe2ff; z-index:1;">
+                        Name <span id="sort-0">${getSortIcon(0)}</span>
+                    </th>
+                    <th onclick="sortTable(1)" 
+                        style="cursor:pointer; position:sticky; top:0; background:#cfe2ff; z-index:1;">
+                        Email <span id="sort-1">${getSortIcon(1)}</span>
+                    </th>
+                    <th onclick="sortTable(2)" 
+                        style="cursor:pointer; position:sticky; top:0; background:#cfe2ff; z-index:1;">
+                        Course <span id="sort-2">${getSortIcon(2)}</span>
+                    </th>
+                    <th onclick="sortTable(3)" 
+                        style="cursor:pointer; position:sticky; top:0; background:#cfe2ff; z-index:1;">
+                        Completed On <span id="sort-3">${getSortIcon(3)}</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        if (paginatedUsers.length === 0) {
+            html += `
+        <tr>
+            <td colspan="4" class="text-center text-muted py-4">
+                ${totalUsers === 0 ? 'No users found in this block.' : 'No users match your search criteria.'}
+            </td>
+        </tr>`;
+        } else {
+            paginatedUsers.forEach(u => {
+                html += `
+        <tr>
+            <td><strong>${toSentenceCase(escapeHtml(u.name || ''))}</strong></td>
+            <td style="font-size:0.85rem;">${escapeHtml(u.email || '')}</td>
+            <td style="font-size:0.85rem;">${escapeHtml(u.course || '')}</td>
+            <td style="font-size:0.85rem;">${formatDate(u.timestamp)}</td>
+        </tr>`;
+            });
+        }
+
+        html += `
+            </tbody>
+        </table>
+    </div>`;
+
+        document.getElementById('tableContent').innerHTML = html;
+        renderPagination(totalUsers, totalPages);
+
+        if (wasSearchFocused) {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.setSelectionRange(cursorPosition, cursorPosition);
+            }
+        }
+
+        const searchInputEl = document.getElementById('searchInput');
+        if (searchInputEl) {
+            searchInputEl.addEventListener('input', function (e) {
+                window.currentSearchValue = e.target.value;
+                currentPage = 1;
+                renderUserTable();
+            });
+        }
+        setupPaginationEvents();
+    }
+
+    function getSortIcon(columnIndex) {
+        if (currentSortColumn === columnIndex) {
+            return currentSortDirection === 'asc' ? '↑' : '↓';
+        }
+        return '↕';
+    }
+
+    function renderPagination(totalUsers, totalPages) {
+        let paginationHtml = '';
+        if (totalPages > 1) {
+            paginationHtml = `<nav><ul class="pagination pagination-sm justify-content-end mb-0">`;
+            const prevDisabled = currentPage === 1;
+            paginationHtml += `
+            <li class="page-item ${prevDisabled ? 'disabled' : ''}">
+                <button class="page-link" data-page="${currentPage - 1}" ${prevDisabled ? 'disabled' : ''}>‹</button>
+            </li>`;
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+            if (endPage - startPage < 4) {
+                startPage = Math.max(1, endPage - 4);
+            }
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHtml += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <button class="page-link" data-page="${i}">${i}</button>
+                </li>`;
+            }
+            const nextDisabled = currentPage === totalPages;
+            paginationHtml += `
+            <li class="page-item ${nextDisabled ? 'disabled' : ''}">
+                <button class="page-link" data-page="${currentPage + 1}" ${nextDisabled ? 'disabled' : ''}>›</button>
+            </li>`;
+            paginationHtml += `</ul></nav>`;
+        }
+        const container = document.getElementById('paginationContainer');
+        if (container) {
+            container.innerHTML = paginationHtml;
+        }
+    }
+
+    function setupPaginationEvents() {
+        const container = document.getElementById('paginationContainer');
+        if (container) {
+            container.querySelectorAll('button[data-page]').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const page = Number(btn.getAttribute('data-page'));
+                    if (!isNaN(page) && !btn.disabled && !btn.classList.contains('disabled')) {
+                        currentPage = page;
+                        renderUserTable();
+                    }
+                });
+            });
+        }
+    }
+
+    function sortTable(columnIndex) {
+        if (currentSortColumn === columnIndex) {
+            currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSortColumn = columnIndex;
+            currentSortDirection = 'asc';
+        }
+        currentPage = 1;
+        renderUserTable();
+    }
+
+    function escapeHtml(text) {
+        text = (text || '').toString();
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return text.replace(/[&<>"']/g, function (m) { return map[m]; });
+    }
+
+    function formatDate(dateString) {
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleDateString('en-IN', {
+                year: 'numeric', month: 'short', day: 'numeric'
+            });
+        } catch (e) {
+            return dateString || '';
+        }
+    }
+
+    // Event listeners
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && navigationStack.length > 0) {
+            goBack();
+        }
+    });
+
+    window.toSentenceCase = toSentenceCase;
+    window.addEventListener('resize', function () {
+        chart.resize();
+    });
+
+    
+    
+    document.addEventListener('DOMContentLoaded', function () {
+        hideLoader();
+        // Initialize
+        loadStates();
+    });
+</script>
+
+{% endblock %}

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>{{ certificate.name }} - Certificate</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+  <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+  <style>
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+      font-family: "Times New Roman", serif;
+      color: #000;
+    }
+
+    .certificate-view {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .certificate-frame {
+      width: 210mm;
+      height: 297mm;
+      background: #fff;
+      position: relative;
+      margin: 0 auto;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.18);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .certificate-frame::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.05);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .certificate-background {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+    }
+
+    .certificate-content {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .cert-text {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      color: #000;
+    }
+
+    .cert-text.name {
+      top: 24%;
+      font-size: 28pt;
+      font-weight: bold;
+    }
+
+    .main-content {
+      top: 30%;
+      font-size: 18pt;
+      font-weight: 600;
+      line-height: 1.5;
+      padding-left: 100px;
+      padding-right: 100px;
+    }
+
+    .main-content .highlight {
+      display: block;
+      margin: 12px 0;
+      font-size: 26pt;
+      font-weight: 700;
+      color: #d60000;
+    }
+
+    .main-content .subheading {
+      font-size: 22pt;
+      font-weight: 700;
+      margin: 8px 0 16px;
+      display: block;
+    }
+
+    .main-content .normal {
+      font-weight: 700;
+    }
+
+    .topics {
+      position: absolute;
+      top: 48%;
+      left: 12%;
+      right: 12%;
+      font-size: 15pt;
+      line-height: 1.55;
+      text-align: left;
+    }
+
+    .topics strong {
+      display: block;
+      font-size: 17pt;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .topics-list {
+      padding-left: 1.2rem;
+    }
+
+    .certificate-actions {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .certificate-actions .btn {
+      min-width: 140px;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .certificate-view {
+        padding: 0;
+      }
+
+      .certificate-frame {
+        transform: none !important;
+        box-shadow: none;
+      }
+
+      .d-print-none {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="certificate-view">
+    <div class="certificate-frame">
+      <img src="{{ url_for('static', filename=certificate.background or 'assets/certificate_bg.png') }}"
+        alt="Certificate background" class="certificate-background">
+      <div class="certificate-content">
+        <div class="cert-text name">
+          <a href="/verifiy_certificate/{{ user.uuid }}/{{certificate.course_id}}" class="text-dark text-decoration-none">{{ user.name }}</a>
+        </div>
+        <div class="cert-text main-content">
+          has successfully completed the training on
+          <div>{{user.completion_time}}</div>
+          <div class="highlight" style="color:#d60000;">
+            {{certificate.name}}
+          </div>
+        </div>
+
+        <div class="topics">
+          <strong>Topics:</strong>
+          <ul class="topics-list">
+            {% for topic in certificate.topics %}
+            <li>{{ topic | safe }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="certificate-footer w-100 text-center px-2" style="
+    position: absolute;
+    top: 93%;
+    font-size: x-small;
+">
+          <div class="footer-text">This certificate is printed through <a href="/" class="text-decoration-none text-dark">e-Saksham
+              Website</a> on</div>
+          <div class="footer-date">{{ user.print_date_time }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="certificate-actions d-print-none">
+      <a href="{{ url_for('auth.certificates') }}" class="btn btn-outline-secondary">Back</a>
+      <button type="button" class="btn btn-primary" onclick="window.print()">Print</button>
+    </div>
+  </div>
+</body>
+
+</html>
+
+

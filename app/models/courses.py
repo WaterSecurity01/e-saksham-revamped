@@ -10,6 +10,7 @@ class Course(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String, nullable=False)
+    short_name = db.Column(db.String)
     description = db.Column(db.Text)
     scorm_version = db.Column(db.String)
     package_path = db.Column(db.String, nullable=False)
@@ -18,12 +19,14 @@ class Course(db.Model):
     manifest_title = db.Column(db.String)
     package_id = db.Column(db.String, nullable=False)
     launch_url = db.Column(db.String, nullable=False)
+    topics = db.Column(db.Text)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
     # created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(tz=ZoneInfo("Asia/Kolkata")))
 
-    def __init__(self, name, description,scorm_version,package_path,manifest_path,manifest_identifier, manifest_title, package_id, launch_url):
+    def __init__(self, name, short_name, description, scorm_version, package_path, manifest_path, manifest_identifier, manifest_title, package_id, launch_url, topics):
         self.name = name
+        self.short_name = short_name
         self.description = description
         self.scorm_version = scorm_version
         self.package_path = package_path
@@ -32,11 +35,15 @@ class Course(db.Model):
         self.manifest_title = manifest_title
         self.package_id = package_id
         self.launch_url = launch_url
+        self.topics = topics
         self.created_at = datetime.now()
     
     def json(self):
         return {
+            "course_id": self.id,
+            "course_name": self.name,
             "name": self.name,
+            "short_name": self.short_name,
             "description": self.description,
             "scorm_version": self.scorm_version,
             "package_path": self.package_path,
@@ -45,6 +52,7 @@ class Course(db.Model):
             "manifest_title": self.manifest_title,
             "package_id": self.package_id,
             "launch_url": self.launch_url,
+            "topics": self.topics,
             "created_at": self.created_at
         }
 
@@ -93,3 +101,16 @@ class Course(db.Model):
 
     def __repr__(self):
         return f"<Course id={self.id} title={self.title}>"
+    
+    @classmethod
+    def get_all_courses(cls):
+        query =  cls.query.order_by(cls.name).all()
+        data = [course.json() for course in query]
+        return data
+    
+    @classmethod
+    def get_course_details_by_id(cls, course_id):
+        course = cls.query.filter_by(id=course_id).first()
+        if course:
+            return course.json()
+        return None

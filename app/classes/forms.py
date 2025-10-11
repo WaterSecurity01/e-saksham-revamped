@@ -1,7 +1,8 @@
+from typing import Optional
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, EmailField, FileField, PasswordField, SelectField, StringField, SubmitField, TextAreaField, IntegerField, ValidationError
-from wtforms.validators import DataRequired, Email, Length, EqualTo, Regexp, InputRequired
-from flask_wtf.file import FileField, FileRequired, FileAllowed
+from wtforms import BooleanField, EmailField, FileField, PasswordField, RadioField, SelectField, StringField, SubmitField, TextAreaField, IntegerField, ValidationError
+from wtforms.validators import DataRequired, Email, Length, EqualTo, Regexp, InputRequired, optional
+from flask_wtf.file import FileField, FileRequired, FileAllowed, FileStorage, file_size
 
 from app.models.menu_item import MenuItem
 
@@ -14,6 +15,9 @@ class LoginForm(FlaskForm):
         "Captcha Answer",
         validators=[DataRequired(), Length(max=3)]
     )
+    submit = SubmitField(
+        "Login", name="submitBtn"
+        )
 
 
 class RegisterForm(FlaskForm):
@@ -71,6 +75,14 @@ class RegisterForm(FlaskForm):
         "Register", name="submitBtn"
         )
 
+class ProfileForm(FlaskForm):
+    full_name = StringField("Full Name (for Certificate)",validators=[DataRequired(), Length(min=3, max=100)])
+    state = SelectField("State",choices=[],  validators=[DataRequired()])
+    district = SelectField("District",choices=[],  validators=[DataRequired()])
+    block = SelectField("Block",choices=[],  validators=[DataRequired()])
+    email = EmailField("Email (username)", validators=[DataRequired(), Email(), Length(max=120)])
+    captcha_answer = StringField("Captcha Answer", validators=[DataRequired(), Length(max=3)])
+    submit = SubmitField("Update Profile", name="submitBtn")
 
 class UploadForm(FlaskForm):
     scorm_file = FileField(
@@ -85,11 +97,22 @@ class UploadForm(FlaskForm):
         "Course Title",
         validators=[DataRequired(), Length(min=3, max=100)]
     )
+    short_name = StringField(
+        "Short Name",
+        validators=[DataRequired(), Length(min=3, max=50)]
+    )
     
     description = TextAreaField(
         'Course Description',
-        validators=[
+        validators=[DataRequired(),
             Length(max=500, message="Description must be under 500 characters.")
+        ],
+        render_kw={"rows": 10}
+    )
+    topics = TextAreaField(
+        'Course Topics',
+        validators=[DataRequired(),
+            Length(max=500, message="Topics must be under 500 characters.")
         ],
         render_kw={"rows": 10}
     )
@@ -113,19 +136,24 @@ class menuItemForm(FlaskForm):
     order_index = IntegerField("Order Index", validators=[DataRequired()])
     submit = SubmitField("Add Menu Item")
 
-# class RegisterForm(FlaskForm):
-#     username = StringField('Username', validators=[DataRequired(), Length(min=4, max=25)])
-#     email = EmailField('Email', validators=[DataRequired(), Email()])
-#     first_name = StringField('First Name', validators=[DataRequired(), Length(max=50)])
-#     last_name = StringField('Last Name', validators=[DataRequired(), Length(max=50)])
-#     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
-#     password2 = PasswordField('Confirm Password', 
-#                             validators=[DataRequired(), 
-#                             EqualTo('password', message='Passwords must match')])
-    # Empty SelectField (choices list left empty)
-    # states = SelectField(
-    #     'Department',
-    #     choices=[],   # empty now, will be filled with JS
-    #     validators=[DataRequired()],
-    #     render_kw={"id": "states", "name": "states"}
-    # )
+class FeedbackForm(FlaskForm):
+    name = StringField("Name", validators=[DataRequired()])
+    email = EmailField("Email (username)",validators=[DataRequired(), Email(), Length(max=120)])
+    subject = StringField("Subject", validators=[DataRequired()])
+    message_type = SelectField("District", choices=[('-1','Select message category'),('course','Course feedback'),('technical', 'Technical(IT) related problem reporting'),
+                                                    ('subject_related','Subject related issues'),('admin','Admin or other broader concerns'),('others','Others')],  validators=[DataRequired()])
+    message = TextAreaField('Message',validators=[Length(max=500, message="Description must be under 500 characters.")],render_kw={"rows": 3})
+    feedback_image = FileField('SCORM Package (ZIP file)',validators=[FileRequired(message="Please upload a screenshot here"),FileAllowed(['jpg','jpeg','png'], 'Only .zip files are allowed!')])
+    captcha_answer = StringField("Captcha Answer",validators=[DataRequired(), Length(max=3)])
+    submit = SubmitField("Submit", name="submitBtn")
+
+class ChangePasswordForm(FlaskForm):
+    old_password = PasswordField('Old Password', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    confirm_password = PasswordField('Confirm Password', validators=[DataRequired()])
+    captcha_answer = StringField(
+        "Captcha Answer",
+        validators=[DataRequired(), Length(max=3)]
+    )
+    submit = SubmitField("Submit", name="submitBtn")
+

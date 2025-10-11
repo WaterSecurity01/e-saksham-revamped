@@ -1,7 +1,15 @@
-from typing import List, Optional
-from flask import Blueprint, render_template, request, jsonify
-from sqlalchemy import distinct
-from app.models.dashboard import (
+from collections import defaultdict
+from typing import List
+
+from flask import Blueprint, json, jsonify, render_template, request
+from flask_login import login_required
+
+from app.classes.helper import _build_enriched_options, orm_to_dict_list
+from app.classes.logging import get_route_loggers , _client_ip
+from app.models.user import User
+from app.models.user_courses import UserCourse
+
+from app.models.activity_dashboard import (
     db,
     ActivityList,
     Cluster,
@@ -18,28 +26,229 @@ from app.models.dashboard import (
     PermissibleWork,
 )
 
+_loggers = get_route_loggers('dashboard')
+access_logger = _loggers.access
+error_logger = _loggers.error
+activity_logger = _loggers.activity
+
+
 blp = Blueprint('dashboard', __name__, url_prefix='/dashboard')
 
-def orm_to_dict_list(queryset, fields):
-    """Convert ORM objects into list of dicts with only required fields."""
-    return [{f: getattr(obj, f) for f in fields} for obj in queryset]
+
+@blp.route('/')
+def universal_dashboard():
+    access_logger.info(
+        'Route accessed | action=universal_dashboard | method=%s | path=%s | ip=%s',
+        request.method,
+        request.path,
+        _client_ip()
+    )
+    try:
+        return render_template("dashboard/universal_dashboard.html")
+    except Exception:
+        error_logger.exception('Error rendering universal dashboard view')
+        raise
+
+@blp.route('/charts')
+@login_required
+def charts():
+    access_logger.info(
+        'Route accessed | action=charts | method=%s | path=%s | ip=%s',
+        request.method,
+        request.path,
+        _client_ip()
+    )
+    try:
+        total_users = User.get_total_users()
+        certified_users = UserCourse.get_certified_users()
+        issuance_percentage = (certified_users / total_users * 100) if total_users > 0 else 0
+        card_data = {
+            'total_users': total_users,
+            'certified_users': certified_users,
+            'issuance_percentage': f"{issuance_percentage:.2f}"
+        }
+
+        activity_logger.info(
+            'Computed card data for charts | total_users=%d | certified_users=%d | issuance_percentage=%s',
+            total_users,
+            certified_users,
+            card_data['issuance_percentage']
+        )
+
+        pie_chart_data = {
+            'issued_total': certified_users,
+            'non_issued_total': total_users - certified_users
+        }
+
+        states = UserCourse.get_state_wise_users(top_5=True)
+        districts = UserCourse.get_all_district_wise_users([s['id'] for s in states], top_5=True)
+        blocks = UserCourse.get_all_block_wise_users([d['id'] for d in districts], top_5=True)
+        users = UserCourse.get_all_users_in_blocks([b['id'] for b in blocks])
+
+        district_data = defaultdict(list)
+        for d in districts:
+            district_data[d['state_id']].append(d)
+
+        block_data = defaultdict(list)
+        for b in blocks:
+            block_data[b['district_id']].append(b)
+
+        users_data = defaultdict(list)
+        for u in users:
+            users_data[u['block_id']].append(u)
+
+        bar_chart_data = {
+            'states': states,
+            'districts': dict(district_data),
+            'blocks': dict(block_data),
+            'users': dict(users_data),
+        }
+
+        activity_logger.info(
+            'Prepared chart hierarchy | states=%d | districts=%d | blocks=%d | users=%d',
+            len(states),
+            len(districts),
+            len(blocks),
+            len(users)
+        )
+
+        return render_template(
+            'dashboard/charts_dashboard.html',
+            card_data=card_data,
+            pie_chart_data=pie_chart_data,
+            bar_chart_data=bar_chart_data
+        )
+    except Exception:
+        error_logger.exception('Error while preparing dashboard charts data')
+        raise
 
 
-def _build_enriched_options(model, fields, enabled_ids):
-    """Return ordered option dictionaries including disabled flags for search results."""
-    fetch_fields = set(fields) | {"id"}
-    options = []
 
-    for obj in model.query.order_by(model.id).all():
-        option = {field: getattr(obj, field) for field in fetch_fields}
-        option["disabled"] = obj.id not in enabled_ids
-        options.append(option)
+@blp.route('/drill_chart')
+@login_required
+def drill_chart():
+    access_logger.info(
+        'Route accessed | action=drill_chart | method=%s | path=%s | ip=%s',
+        request.method,
+        request.path,
+        _client_ip()
+    )
+    try:
 
-    options.sort(key=lambda record: (record["disabled"], record["id"]))
-    return options
+        states = UserCourse.get_state_wise_users()
+        districts = UserCourse.get_all_district_wise_users([s['id'] for s in states] )
+        blocks = UserCourse.get_all_block_wise_users([d['id'] for d in districts] )
+        users = UserCourse.get_all_users_in_blocks([b['id'] for b in blocks])
+
+        district_data = defaultdict(list)
+        for d in districts:
+            district_data[d['state_id']].append(d)
+
+        block_data = defaultdict(list)
+        for b in blocks:
+            block_data[b['district_id']].append(b)
+
+        users_data = defaultdict(list)
+        for u in users:
+            users_data[u['block_id']].append(u)
+
+        bar_chart_data = {
+            'states': states,
+            'districts': dict(district_data),
+            'blocks': dict(block_data),
+            'users': dict(users_data),
+        }
+
+        activity_logger.info(
+            'Prepared chart hierarchy | states=%d | districts=%d | blocks=%d | users=%d',
+            len(states),
+            len(districts),
+            len(blocks),
+            len(users)
+        )
+
+        return render_template(
+            'dashboard/drill_chart.html',
+            bar_chart_data=bar_chart_data
+        )
+    except Exception:
+        error_logger.exception('Error while preparing dashboard charts data')
+        raise
+
+@blp.route('/states', methods=['GET','POST'])
+def get_dashboard_states():
+    access_logger.info(
+        'Route accessed | action=get_dashboard_states | method=%s | path=%s | ip=%s',
+        request.method,
+        request.path,
+        _client_ip()
+    )
+    try:
+        certificates = UserCourse.get_state_count()
+        activity_logger.info('Fetched state metrics | count=%d', len(certificates))
+        return jsonify(certificates)
+    except Exception:
+        error_logger.exception('Error fetching state metrics')
+        return jsonify({'error': 'Failed to fetch states data'}), 500
+
+@blp.route('/districts', methods=['POST'])
+def get_dashboard_districts():
+    access_logger.info(
+        'Route accessed | action=get_dashboard_districts | method=%s | path=%s | ip=%s',
+        request.method,
+        request.path,
+        _client_ip()
+    )
+    data = json.loads(request.data)
+    try:
+        results = UserCourse.get_district_count(data['state_id'])
+        activity_logger.info(
+            'Fetched district metrics | state_id=%s | count=%d',
+            data.get('state_id'),
+            len(results)
+        )
+        return jsonify(results), 200
+    except Exception:
+        error_logger.exception('Error in get_districts | state_id=%s', data.get('state_id'))
+        return jsonify({'error': 'Failed to fetch districts data'}), 500
+
+@blp.route('/blocks', methods=['POST'])
+def get_dashboard_blocks():
+    access_logger.info(
+        'Route accessed | action=get_dashboard_blocks | method=%s | path=%s | ip=%s',
+        request.method,
+        request.path,
+        _client_ip()
+    )
+    data = json.loads(request.data)
+    try:
+        results = UserCourse.get_block_count(data['state_id'], data['district_id'])
+        activity_logger.info(
+            'Fetched block metrics | state_id=%s | district_id=%s | count=%d',
+            data.get('state_id'),
+            data.get('district_id'),
+            len(results)
+        )
+        return jsonify(results), 200
+    except Exception:
+        error_logger.exception(
+            'Error in get_blocks | state_id=%s | district_id=%s',
+            data.get('state_id'),
+            data.get('district_id')
+        )
+        return jsonify({'error': 'Failed to fetch blocks data'}), 500
+
+
 
 @blp.route('/activity_identification', methods=['GET'])
+@login_required
 def activity_identification():
+    access_logger.info(
+        'Route accessed | action=dashboard.activity_identification | method=%s | path=%s | ip=%s',
+        request.method,
+        request.path,
+        _client_ip()
+    )
     # Dynamic dropdowns (ordered by id)
     clusters = orm_to_dict_list(Cluster.query.order_by(Cluster.id).all(), ["id", "name"])
     slopes = orm_to_dict_list(Slope.query.order_by(Slope.id).all(), ["id", "name"])
@@ -55,6 +264,13 @@ def activity_identification():
     work_types = orm_to_dict_list(WorkType.query.order_by(WorkType.id).all(), ["id", "name"])
     permissible_works = orm_to_dict_list(PermissibleWork.query.order_by(PermissibleWork.id).all(), ["id", "name"])
 
+    activity_logger.info(
+        'Rendering activity identification view | clusters=%d | categories=%d | permissible_works=%d | ip=%s',
+        len(clusters),
+        len(categories),
+        len(permissible_works),
+        _client_ip()
+    )
     return render_template(
         "dashboard/activity_identification.html",
         page_subtitle="Identification Dashboard",
@@ -74,249 +290,3 @@ def activity_identification():
     )
 
 
-@blp.route('/activity_identification/search', methods=['POST'])
-def activity_identification_search():
-    """Search permissible works and surface related options for quick filtering."""
-    try:
-        data = request.get_json() or {}
-        search_term = data.get('search', '').strip().lower()
-
-        if not search_term or len(search_term) < 3:
-            return jsonify({
-                "success": False,
-                "error": "Search term must be at least 3 characters"
-            })
-
-        matching_permissible_works = PermissibleWork.query.filter(
-            PermissibleWork.name.ilike(f'%{search_term}%')
-        ).order_by(PermissibleWork.id).all()
-
-        matching_pw_ids = [pw.id for pw in matching_permissible_works]
-
-        if not matching_pw_ids:
-            # Nothing matched – return fully disabled option sets so UI can indicate no hits
-            return jsonify({
-                "success": True,
-                "data": {
-                    "permissible_work_ids": [],
-                    "permissible_works": _build_enriched_options(PermissibleWork, {"id", "name"}, set()),
-                    "work_types": _build_enriched_options(WorkType, {"id", "name"}, set()),
-                    "major_scheduled_category": _build_enriched_options(MajorScheduledCategory, {"id", "name"}, set())
-                }
-            })
-
-        related_activities = ActivityList.query.filter(
-            ActivityList.permissible_work.in_(matching_pw_ids)
-        ).all()
-
-        work_type_ids = {
-            activity.work_type for activity in related_activities if activity.work_type is not None
-        }
-
-        major_scheduled_ids = {
-            activity.major_scheduled_category
-            for activity in related_activities
-            if activity.major_scheduled_category is not None
-        }
-
-        response_payload = {
-            "permissible_work_ids": matching_pw_ids,
-            "permissible_works": _build_enriched_options(
-                PermissibleWork,
-                {"id", "name"},
-                set(matching_pw_ids)
-            ),
-            "work_types": _build_enriched_options(
-                WorkType,
-                {"id", "name"},
-                work_type_ids
-            ),
-            "major_scheduled_category": _build_enriched_options(
-                MajorScheduledCategory,
-                {"id", "name"},
-                major_scheduled_ids
-            )
-        }
-
-        return jsonify({
-            "success": True,
-            "data": response_payload
-        })
-
-    except Exception as exc:
-        print(f"Error in search: {exc}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({
-            "success": False,
-            "error": str(exc)
-        }), 500
-
-
-@blp.route('/activity_identification/filter', methods=['POST'])
-def activity_identification_filter():
-    """
-    Enhanced filtering with checkbox support and auto-selection logic
-    """
-    try:
-        data = request.get_json() or {}
-
-        # Filter map
-        filter_map = {
-            "clusters": ActivityList.cluster_type,
-            "categories": ActivityList.category,
-            "major_scheduled_category": ActivityList.major_scheduled_category,
-            "beneficiaries": ActivityList.beneficiary_type,
-            "activity_types": ActivityList.activity_type,
-            "work_types": ActivityList.work_type,
-            "slopes": ActivityList.slope,
-            "ridges": ActivityList.ridge,
-            "water_works": ActivityList.water_work,
-            "location_specifics": ActivityList.location_specifics,
-            "permissible_works": ActivityList.permissible_work,
-            "nature_of_works": ActivityList.nature_of_work,
-        }
-
-        # Apply filters
-        filtered_q = db.session.query(ActivityList)
-        for arg_name, column in filter_map.items():
-            ids = data.get(arg_name, [])
-            if ids and len(ids) > 0:
-                filtered_q = filtered_q.filter(column.in_(ids))
-
-        # Get distinct IDs from filtered query
-        filtered_ids = {
-            key: set(row[0] for row in filtered_q.with_entities(col).distinct().all() if row[0] is not None)
-            for key, col in filter_map.items()
-        }
-
-        # Model mapping
-        model_map = {
-            "clusters": (Cluster, ["id", "name"]),
-            "categories": (Category, ["id", "name"]),
-            "major_scheduled_category": (MajorScheduledCategory, ["id", "name"]),
-            "beneficiaries": (Beneficiary, ["id", "name"]),
-            "activity_types": (ActivityType, ["id", "short_name"]),
-            "work_types": (WorkType, ["id", "name"]),
-            "slopes": (Slope, ["id", "name"]),
-            "ridges": (Ridge, ["id", "name"]),
-            "water_works": (WaterWork, ["id", "name"]),
-            "location_specifics": (LocationSpecific, ["id", "name"]),
-            "permissible_works": (PermissibleWork, ["id", "name"]),
-            "nature_of_works": (NatureOfWork, ["id", "short_name"]),
-        }
-
-        # Define which groups are radio buttons (yuktdhara-card entities)
-        yuktdhara_groups = {
-            "nature_of_works", "categories", "major_scheduled_category", 
-            "beneficiaries", "activity_types", "work_types", "permissible_works"
-        }
-        
-        # Define which groups are checkboxes (multi-select)
-        checkbox_groups = {
-            "clusters", "slopes", "ridges", "water_works", "location_specifics"
-        }
-
-        reorder_on_disable = {"location_specifics", "major_scheduled_category", "work_types", "permissible_works"}
-        response_data = {}
-        auto_select_data = {}
-        single_select_auto_fill = {}
-
-        has_active_filters = any(
-            isinstance(ids, (list, tuple, set)) and len(ids) > 0
-            for ids in data.values()
-        )
-
-        permissible_filter_active = bool(data.get("permissible_works"))
-
-        for key, (model, fields) in model_map.items():
-            all_options = orm_to_dict_list(model.query.order_by(model.id).all(), fields)
-            
-            enriched = []
-            enabled_count = 0
-            enabled_options = []
-
-            for opt in all_options:
-                opt_id = opt["id"]
-                is_disabled = opt_id not in filtered_ids.get(key, set())
-                opt["disabled"] = is_disabled
-
-                if not is_disabled:
-                    enabled_count += 1
-                    enabled_options.append(opt)
-
-                enriched.append(opt)
-
-            # Auto-select checkbox groups based on rules
-            if key in checkbox_groups:
-                selected_ids: List[int] = []
-
-                if key == "slopes":
-                    if permissible_filter_active and enabled_count == 6:
-                        selected_ids = [7]
-                        for opt in enriched:
-                            if opt["id"] == 7:
-                                opt["disabled"] = False
-                            elif opt["id"] in {1, 2, 3, 4, 5, 6}:
-                                opt["disabled"] = True
-                        enabled_options = [opt for opt in enriched if not opt["disabled"]]
-                        enabled_count = len(enabled_options)
-                    elif permissible_filter_active and enabled_count == 1 and enabled_options[0]["id"] == 7:
-                        selected_ids = [7]
-                    elif permissible_filter_active and enabled_count > 0:
-                        slope_enabled_ids = {opt["id"] for opt in enabled_options}
-                        any_slope_option = next((opt for opt in enriched if opt["id"] == 7), None)
-
-                        slope_condition = all(sid in slope_enabled_ids for sid in [1, 2, 3, 4, 5, 6])
-
-                        if any_slope_option and not any_slope_option["disabled"] and slope_condition:
-                            selected_ids = [7]
-                        else:
-                            selected_ids = [opt["id"] for opt in enabled_options]
-                    elif enabled_count == 1 and not data.get(key):
-                        selected_ids = [enabled_options[0]["id"]]
-                else:
-                    if permissible_filter_active and enabled_count > 0:
-                        selected_ids = [opt["id"] for opt in enabled_options]
-                    elif enabled_count == 1 and not data.get(key):
-                        selected_ids = [enabled_options[0]["id"]]
-
-                if selected_ids:
-                    auto_select_data[key] = selected_ids
-
-            # Single selection auto-fill for yuktdhara-card fields only
-            elif key in yuktdhara_groups and enabled_count == 1 and not data.get(key):
-                single_select_auto_fill[key] = {
-                    'id': enabled_options[0]['id'],
-                    'name': enabled_options[0][fields[1]]
-                }
-
-            # Sorting logic
-            if key in reorder_on_disable:
-                enriched.sort(key=lambda x: (x["disabled"], x["id"]))
-            else:
-                enriched.sort(key=lambda x: x["id"])
-
-            response_data[key] = enriched
-            response_data[f"{key}_count"] = enabled_count
-
-        # Add auto-selection data
-        if auto_select_data:
-            response_data["auto_select"] = auto_select_data
-            
-        if single_select_auto_fill:
-            response_data["auto_fill"] = single_select_auto_fill
-
-        return jsonify({
-            "success": True,
-            "data": response_data
-        })
-
-    except Exception as e:
-        print(f"Error in filtering: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500

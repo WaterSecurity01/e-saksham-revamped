@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Logs{% endblock %}
+{% block content %}
+<div class="container py-4 log-viewer">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+            <div class="card shadow-sm log-viewer-card">
+                <div class="card-body">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+                        <div>
+                            <h1 class="h4 mb-1 text-secondary fw-semibold">Route Logs</h1>
+                            <p class="text-muted mb-0">Browse access, error, and activity traces captured across active modules.</p>
+                        </div>
+                    </div>
+
+                    {% if modules %}
+                    <form method="get" class="row g-3 align-items-end log-viewer-controls">
+                        <div class="col-sm-6 col-lg-4">
+                            <label for="module" class="form-label text-muted small mb-1">Module</label>
+                            <select id="module" name="module" class="form-select">
+                                {% for module in modules %}
+                                <option value="{{ module }}" {% if module == selected_module %}selected{% endif %}>
+                                    {{ module.replace('_', ' ')|title }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <label for="category" class="form-label text-muted small mb-1">Category</label>
+                            <select id="category" name="category" class="form-select">
+                                {% for category in categories %}
+                                <option value="{{ category }}" {% if category == selected_category %}selected{% endif %}>
+                                    {{ category|title }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-sm-12 col-lg-4 d-grid d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary log-viewer-submit">Refresh</button>
+                        </div>
+                    </form>
+                    {% endif %}
+
+                    {% if log_error %}
+                    <div class="alert alert-warning mt-4 mb-0" role="alert">
+                        {{ log_error }}
+                    </div>
+                    {% else %}
+                    <div class="log-viewer-meta d-flex flex-column flex-md-row justify-content-between align-items-md-center mt-4">
+                        <div class="text-muted small">
+                            Viewing <span class="fw-semibold">{{ selected_category|title }}</span> log for
+                            <span class="fw-semibold">{{ selected_module.replace('_', ' ')|title }}</span>
+                        </div>
+                        {% if log_file_name %}
+                        <div class="text-muted small">File: {{ log_file_name }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="log-viewer-output mt-3">
+                        {% if log_entries %}
+                        <div class="log-viewer-count text-muted small mb-2">
+                            Showing latest {{ log_entries|length }} lines (newest last).
+                        </div>
+                        <div class="log-scroller">
+                            {% for entry in log_entries %}
+                            <div class="log-line">
+                                {% if entry.timestamp %}
+                                <span class="log-timestamp">{{ entry.timestamp }}</span>
+                                <span class="log-separator">|</span>
+                                {% endif %}
+                                <span class="log-message">{{ entry.message }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted mb-0">This log is empty.</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

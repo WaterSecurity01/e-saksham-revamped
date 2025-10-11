@@ -3,68 +3,60 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
-        <div class="card border-5">
+        <div class="card mt-5">
             <div class="card-header text-center">
                 <h4 class="card-title mb-0"> Register </h4>
             </div>
             <div class="card-body">
-                <!-- <div class="row text-center">
-                <div class="fs-1 fw-semibold">Register to login and start learning</div>
-                </div> -->
                 <div class="row">
                 <form id="register-form-desktop" action="{{url_for('auth.register')}}" method="post" novalidate>
                     {{ form.hidden_tag() }}
-
-                    <div class="mt-3">
-                    {{ form.full_name(class="form-control form-size", placeholder=form.full_name.label.text) }}
-                    <div class="invalid-feedback">Full name is required.</div>
-                    </div>
-
-                    <div class="mt-3">
-                    {{ form.state(class="form-select form-size text-body-secondary mb-3", id="state") }}
-                    <div class="invalid-feedback">Please select a state.</div>
-                    </div>
-
-                    <div class="mt-3">
-                    {{ form.district(class="form-select form-size text-body-secondary mb-3", id="district", disabled=True) }}
-                    <div class="invalid-feedback">Please select a district.</div>
-                    </div>
-
-                    <div class="mt-3">
-                    {{ form.block(class="form-select form-size text-body-secondary mb-3", id="block", disabled=True) }}
-                    <div class="invalid-feedback">Please select a block.</div>
-                    </div>
-
-                    <div class="mt-3">
-                    {{ form.email(class="form-control form-size", placeholder=form.email.label.text, autocomplete="off") }}
-                    <div class="invalid-feedback">Please provide a valid email.</div>
-                    </div>
-
-                    <div class="mt-3">
-                    {{ form.password(class="form-control form-size", placeholder="Password", autocomplete="off") }}
-                    <div class="invalid-feedback">Password must meet the required format.</div>
-                    </div>
-
-                    <div class="mt-2 text-center fs-8 text-body-secondary" name="passwordHelp">
-                    The password should be of 8 characters having at least one lowercase alphabet,
-                    one uppercase alphabet, one digit, and one special character
-                    </div>
-
-                    <div class="mt-3">
-                    {{ form.confirm_password(class="form-control form-size", placeholder="Confirm Password", autocomplete="off") }}
-                    <div class="invalid-feedback">Passwords must match.</div>
-                    </div>
-
-                    <div class="mt-3 d-flex justify-content-center align-items-center gap-2">
-                    <strong><label class="mb-0">Solve: {{captcha_question}} = ?</label></strong>
-                    {{ form.captcha_answer(class="form-control w-auto") }}<br>
-                    <div class="invalid-feedback">Please solve the captcha.</div>
-                    </div>
-                    <div class="d-grid">
-                    {{ form.submit(class="btn btn-primary mt-4 form-size init-loader", disabled=True) }}
+                    <div class="d-grid gap-3">
+                        <div class="form-floating">
+                        {{ form.full_name(class="form-control form-size", placeholder=form.full_name.label.text) }}
+                        {{ form.full_name.label(class="form-label") }}
+                        <div class="invalid-feedback">Full name is required.</div>
+                        </div>
+                        <div class="">
+                        {{ form.state(class="form-select form-size text-body-secondary", id="state") }}
+                        <div class="invalid-feedback">Please select a state.</div>
+                        </div>
+                        <div class="">
+                        {{ form.district(class="form-select form-size text-body-secondary", id="district", disabled=True) }}
+                        <div class="invalid-feedback">Please select a district.</div>
+                        </div>
+                        <div class="">
+                        {{ form.block(class="form-select form-size text-body-secondary", id="block", disabled=True) }}
+                        <div class="invalid-feedback">Please select a block.</div>
+                        </div>
+                        <div class="form-floating">
+                        {{ form.email(class="form-control form-size", placeholder=form.email.label.text, autocomplete="off", placeholder=form.email.label.text) }}
+                        {{ form.email.label(class="form-label") }}
+                        <div class="invalid-feedback">Please provide a valid email.</div>
+                        </div>
+                        <div class="form-floating">
+                        {{ form.password(class="form-control form-size", placeholder="Password", autocomplete="off", placeholder=form.password.label.text) }}
+                        {{ form.password.label(class="form-label") }}
+                        <div class="invalid-feedback">Password must meet the required format.</div>
+                        </div>
+                        <div class="text-center fs-8 text-body-secondary" name="passwordHelp">
+                        The password should be of 8 characters having at least one lowercase alphabet,
+                        one uppercase alphabet, one digit, and one special character
+                        </div>
+                        <div class="form-floating">
+                        {{ form.confirm_password(class="form-control form-size", placeholder="Confirm Password", autocomplete="off", placeholder=form.confirm_password.label.text) }}
+                        {{ form.confirm_password.label(class="form-label") }}
+                        <div class="invalid-feedback">Passwords must match.</div>
+                        </div>
+                        <div class="d-flex justify-content-center align-items-center gap-2">
+                        <strong><label class="mb-0">Solve: {{captcha_question}} = ?</label></strong>
+                        {{ form.captcha_answer(class="form-control w-auto") }}<br>
+                        <div class="invalid-feedback">Please solve the captcha.</div>
+                        </div>
+                        {{ form.submit(class="btn btn-primary mt-4 form-size init-loader", disabled=True) }}
                     </div>
                     <div class="mt-2 text-center">
-                    <p class="text-secondary">Are you a member? 
+                    <p class="text-secondary">Already have an account? 
                         <a href="{{url_for('auth.login')}}" style="color: red;" class="init-loader">Login Now</a>
                     </p>
                     </div>
@@ -129,51 +121,51 @@
     let confirm_password_text = null;
 
     // Fetch public key on page load (async/await)
-    async function fetchPublicKey() {
-        try {
-            const response = await fetch(ENDPOINTS.encrypt_key);
-            if (!response.ok) throw new Error('Failed to fetch encryption keys');
-            const data = await response.json();
+    // async function fetchPublicKey() {
+    //     try {
+    //         const response = await fetch(ENDPOINTS.encrypt_key);
+    //         if (!response.ok) throw new Error('Failed to fetch encryption keys');
+    //         const data = await response.json();
 
-            if (!data.publicKey) throw new Error('Public key missing in response');
-            RSA_PUBLIC_KEY = data.publicKey;
-            keyLoaded = true;
-            console.log("RSA Public key loaded");
-        } catch (error) {
-            console.error("Error fetching encryption keys:", error);
-            keyLoaded = false;
-        }
-    }
+    //         if (!data.publicKey) throw new Error('Public key missing in response');
+    //         RSA_PUBLIC_KEY = data.publicKey;
+    //         keyLoaded = true;
+    //         console.log("RSA Public key loaded");
+    //     } catch (error) {
+    //         console.error("Error fetching encryption keys:", error);
+    //         keyLoaded = false;
+    //     }
+    // }
 
-    // Encrypt a single password
-    function encryptPasswordRSA(plaintext) {
-        if (!RSA_PUBLIC_KEY) throw new Error("Public key not loaded.");
-        const encryptor = new JSEncrypt();
-        encryptor.setPublicKey(RSA_PUBLIC_KEY);
-        return encryptor.encrypt(plaintext);
-    }
+    // // Encrypt a single password
+    // function encryptPasswordRSA(plaintext) {
+    //     if (!RSA_PUBLIC_KEY) throw new Error("Public key not loaded.");
+    //     const encryptor = new JSEncrypt();
+    //     encryptor.setPublicKey(RSA_PUBLIC_KEY);
+    //     return encryptor.encrypt(plaintext);
+    // }
 
-    // Encrypt all password fields before submit
-    function encryptAllPasswordFieldsRSA() {
-        const passwordFields = form.querySelectorAll('input[type="password"]');
-        passwordFields.forEach(field => {
-            if (field.dataset.encrypted === "true") return; // prevent double encryption
-            if (field.value.trim() !== "") {
-                try {
-                    field.value = encryptPasswordRSA(field.value);
-                    field.dataset.encrypted = "true"; // mark as encrypted
-                } catch (err) {
-                    console.error("❌ Encryption failed:", err);
-                    throw err;
-                }
-            }
-        });
-    }
+    // // Encrypt all password fields before submit
+    // function encryptAllPasswordFieldsRSA() {
+    //     const passwordFields = form.querySelectorAll('input[type="password"]');
+    //     passwordFields.forEach(field => {
+    //         if (field.dataset.encrypted === "true") return; // prevent double encryption
+    //         if (field.value.trim() !== "") {
+    //             try {
+    //                 field.value = encryptPasswordRSA(field.value);
+    //                 field.dataset.encrypted = "true"; // mark as encrypted
+    //             } catch (err) {
+    //                 console.error("❌ Encryption failed:", err);
+    //                 throw err;
+    //             }
+    //         }
+    //     });
+    // }
 
     // RSA encryption on Submit
     form.addEventListener("submit", function (event) {
         try {
-            encryptAllPasswordFieldsRSA();
+            encryptAllPasswordFieldsRSA(form);
             form.submit();
         } catch (error) {
             console.error("❌ Encryption failed:", err);

@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% block title %}Reels & Videos{% endblock %}
+{% block content %}
+
+
+<div class="container py-5">
+    <input type="hidden" name="videos" id="videosData" value='{{ videos|tojson }}'>
+
+    <section id="shortsSection" class="shorts-section mb-5">
+        <div class="section-label">
+            <i class="fa-solid fa-bolt text-danger fs-5"></i>
+            <h4 class="title mb-0">How-to Reels</h4>
+        </div>
+        <div id="shortsRow" class="shorts-row"></div>
+    </section>
+
+    <section class="mb-5">
+        <div class="section-label">
+            <i class="fa-solid fa-film text-primary fs-5"></i>
+            <h4 class="title mb-0">How-to Videos</h4>
+        </div>
+        <div class="row g-4" id="videoGrid"></div>
+    </section>
+
+    <section id="workshopSection" class="mb-5">
+        <div class="section-label">
+            <i class="fa-solid fa-chalkboard-user text-success fs-5"></i>
+            <h4 class="title mb-0">Workshop Videos</h4>
+        </div>
+        <div class="row g-4" id="workshopGrid"></div>
+    </section>
+</div>
+
+<!-- Immersive overlays -->
+<div class="modal fade" id="videoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-0">
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="ratio ratio-16x9">
+                    <iframe id="videoModalPlayer"
+                        src=""
+                        title="Video player"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const videos = JSON.parse(document.getElementById('videosData').value || '[]')
+    .filter(v => v && typeof v.embedUrl === 'string' && v.embedUrl)
+    .map(v => ({
+        ...v,
+        is_short: Boolean(v.is_short),
+        is_how_to: v.is_how_to !== false,
+        id: extractYouTubeId(v.embedUrl)
+    }));
+
+const shorts = videos.filter(v => v.is_short);
+const longVideos = videos.filter(v => !v.is_short);
+const howToLongVideos = longVideos.filter(v => v.is_how_to);
+const workshopVideos = longVideos.filter(v => !v.is_how_to);
+
+function extractYouTubeId(embedUrl) {
+    try {
+        const url = new URL(embedUrl);
+        if (url.pathname.includes('/embed/')) {
+            const parts = url.pathname.split('/');
+            const idx = parts.indexOf('embed');
+            return idx >= 0 ? parts[idx + 1] : '';
+        }
+        if (url.pathname.includes('/shorts/')) {
+            return url.pathname.split('/shorts/')[1].split('/')[0];
+        }
+        if (url.searchParams.has('v')) {
+            return url.searchParams.get('v');
+        }
+    } catch (e) {
+        const m = embedUrl.match(/(?:embed|shorts)\/([A-Za-z0-9_-]{5,20})/);
+        return m ? m[1] : '';
+    }
+    const fallback = embedUrl.match(/(?:embed|shorts)\/([A-Za-z0-9_-]{5,20})/);
+    return fallback ? fallback[1] : '';
+}
+
+function getThumbnailUrl(id) {
+    return `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+}
+
+function buildEmbedUrl(embedUrl, { autoplay = false } = {}) {
+    const [base, queryString] = embedUrl.split('?');
+    const params = new URLSearchParams(queryString || '');
+    params.set('rel', '0');
+    params.set('modestbranding', '1');
+    params.set('playsinline', '1');
+    params.set('iv_load_policy', '3');
+    if (autoplay) {
+        params.set('autoplay', '1');
+    } else {
+        params.delete('autoplay');
+    }
+    return `${base}?${params.toString()}`;
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function createVideoCard(video, longIndex, isMobile = false) {
+    const colClass = isMobile ? 'col-12' : 'col-lg-3 col-md-4';
+    const thumb = getThumbnailUrl(video.id);
+    const titleEsc = escapeHtml(video.title);
+    const duration = escapeHtml(video.duration || '');
+    return `
+        <div class="${colClass}">
+            <div class="card video-card border-3 h-100"
+                 role="button" tabindex="0"
+                 data-video-index="${longIndex}"
+                 onclick="openVideo(${longIndex})"
+                 onkeydown="handleCardKey(event, ${longIndex})"
+                 aria-label="Play ${titleEsc}" style="border-color: #dee2e6;">
+                <div class="thumbnail-container rounded-top">
+                    <img class="thumb-img" src="${thumb}" alt="${titleEsc}" loading="lazy">
+                    <div class="play-overlay bg-white border border-primary">
+                        <i class="fa-solid fa-play text-primary fs-5"></i>
+                    </div>
+                    <span class="badge bg-dark duration-badge">${duration}</span>
+                </div>
+                <div class="card-body py-3">
+                    <h6 class="video-card-title">${titleEsc}</h6>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function createShortCard(video, indexInShorts) {
+    const thumb = getThumbnailUrl(video.id);
+    const titleEsc = escapeHtml(video.title);
+    const duration = escapeHtml(video.duration || '');
+    return `
+        <article class="short-card"
+            role="button" tabindex="0"
+            onclick="openShort(${indexInShorts})"
+            onkeydown="handleShortKey(event, ${indexInShorts})"
+            aria-label="Play short ${titleEsc}">
+            <div class="short-thumb">
+                <img src="${thumb}" alt="${titleEsc}" loading="lazy">
+                <span class="badge bg-dark duration-badge">${duration}</span>
+            </div>
+            <div class="short-title">${titleEsc}</div>
+        </article>
+    `;
+}
+
+function populateHomePage() {
+    const shortsSection = document.getElementById('shortsSection');
+    const shortsRow = document.getElementById('shortsRow');
+    const hasShorts = shorts.length > 0;
+    if (shortsSection) {
+        shortsSection.style.display = hasShorts ? 'block' : 'none';
+        if (hasShorts && shortsRow) {
+            shortsRow.innerHTML = shorts.map((v, i) => createShortCard(v, i)).join('');
+        }
+    }
+
+    const videoGrid = document.getElementById('videoGrid');
+    if (videoGrid) {
+        videoGrid.innerHTML = howToLongVideos
+            .map(v => createVideoCard(v, longVideos.indexOf(v))).join('');
+    }
+
+    const workshopSection = document.getElementById('workshopSection');
+    const workshopGrid = document.getElementById('workshopGrid');
+    if (workshopSection && workshopGrid) {
+        if (workshopVideos.length) {
+            workshopSection.style.display = 'block';
+            workshopGrid.innerHTML = workshopVideos
+                .map(v => createVideoCard(v, longVideos.indexOf(v))).join('');
+        } else {
+            workshopSection.style.display = 'none';
+        }
+    }
+}
+
+function handleCardKey(event, index) {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openVideo(index);
+    }
+}
+
+function handleShortKey(event, index) {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openShort(index);
+    }
+}
+
+function showVideo(embedUrl) {
+    const modal = new bootstrap.Modal(document.getElementById('videoModal'));
+    const player = document.getElementById('videoModalPlayer');
+    player.src = buildEmbedUrl(embedUrl, { autoplay: true });
+    modal.show();
+
+    const cleanup = () => {
+        player.src = '';
+        document.getElementById('videoModal').removeEventListener('hidden.bs.modal', cleanup);
+    };
+    document.getElementById('videoModal').addEventListener('hidden.bs.modal', cleanup);
+}
+
+function openVideo(index) {
+    const video = longVideos[index];
+    if (!video) return;
+    showVideo(video.embedUrl);
+}
+
+function openShort(index) {
+    const video = shorts[index];
+    if (!video) return;
+    showVideo(video.embedUrl);
+}
+
+populateHomePage();
+</script>
+
+{% endblock %}

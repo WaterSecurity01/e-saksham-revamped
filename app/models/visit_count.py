@@ -7,7 +7,8 @@ class VisitCount(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     count = db.Column(db.BigInteger)
 
-    def __init__(self, count):
+    def __init__(self, id, count):
+        self.id = id
         self.count = count
 
     def json(self):

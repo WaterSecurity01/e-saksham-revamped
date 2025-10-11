@@ -9,28 +9,6 @@ import logging
 from app.db import db
 
 # Import centralized loggers
-try:
-    from app import activity_logger, access_logger, error_logger
-except ImportError:
-    activity_logger = logging.getLogger('activity')
-    access_logger = logging.getLogger('access')
-    error_logger = logging.getLogger('error')
-
-# class User(UserMixin, db.Model):
-#     __tablename__ = "users"
-    
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(128))
-#     email = db.Column(db.String(128), unique=True)
-#     password = db.Column(db.String(128))
-#     is_active = db.Column(db.Boolean, default=True)
-#     is_admin = db.Column(db.Boolean, default=False)
-#     registered_on = db.Column(db.DateTime, default=lambda: datetime.now(tz=ZoneInfo('Asia/Kolkata')))
-#     uuid = db.Column(db.String(36), unique=True, index=True, default=lambda: str(uuid.uuid4()))
-
-#     # Relationships
-#     user_roles = db.relationship('UserInRole', back_populates='user', cascade="all, delete-orphan")
-
 
 
 class User(UserMixin, db.Model):
@@ -47,15 +25,14 @@ class User(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     registered_on = db.Column(db.DateTime, default=lambda: datetime.now(tz=ZoneInfo('Asia/Kolkata')))
     uuid = db.Column(db.String(36), unique=True, index=True, default=get_uuid)
-    activity_log = db.relationship('ActivityLog', backref='user', lazy='dynamic', cascade='all, delete-orphan')
     password_reset_expiry = db.Column(DateTime(timezone=True), nullable=True)
     reset_token = db.Column(db.String(), nullable=True, unique=True, index=True)
     totp_secret = db.Column(db.String(64), nullable=True, unique=True, index=True)
 
     # added on 20 Aug 2025 to cater for block/district/state
-    state_id = db.Column(db.ForeignKey('states.id'), nullable=False)
-    district_id = db.Column(db.ForeignKey('districts.id'), nullable=False)
-    block_id = db.Column(db.ForeignKey('blocks.id'), nullable=False)
+    state_id = db.Column(db.ForeignKey('states.id'), nullable=True)
+    district_id = db.Column(db.ForeignKey('districts.id'), nullable=True)
+    block_id = db.Column(db.ForeignKey('blocks.id'), nullable=True)
 
     #added on 29 Aug 2025
     supervisor_id = db.Column(db.Integer, default=0)
@@ -85,13 +62,10 @@ class User(UserMixin, db.Model):
             self.state_id = state_id
             self.district_id = district_id
             self.block_id = block_id
-            activity_logger.info(f"User initialized: {self.name} ({self.email}), uuid={self.uuid}")
         except Exception as ex:
-            error_logger.error(f"Error initializing User: {ex}")
+            pass
 
     def json(self):
-        try:
-            access_logger.info(f"Accessed user json for id={self.id}, email={self.email}")
             return {
                 'id': self.id,
                 'name': self.name,
@@ -108,10 +82,9 @@ class User(UserMixin, db.Model):
                 'district_id': self.district_id,
                 'block_id': self.block_id
             }
-        except Exception as ex:
-            error_logger.error(f"Error in json() for User id={getattr(self, 'id', None)}: {ex}")
-            return {}
 
+
+    # Menu related functions
     def get_structured_menus(self):
         """
         Return a hierarchical list of active menu items available to this user through roles.
@@ -159,20 +132,128 @@ class User(UserMixin, db.Model):
     
     def get_menus(self):
         """Return all active menu items available to this user through roles."""
-        from sqlalchemy.orm import joinedload
+        from sqlalchemy.orm import joinedload,aliased,contains_eager
         from app.models import MenuItem, MenuInRole, Role, UserInRole
 
+        # menus = (
+        #     MenuItem.query.join(MenuInRole)
+        #     .join(Role)
+        #     .join(UserInRole)
+        #     .filter(UserInRole.user_id == self.id, MenuItem.is_active == True)
+        #     .options(joinedload(MenuItem.children))  # load children for hierarchy
+        #     .order_by(MenuItem.order_index)
+        #     .all()
+        # )
+        Child = aliased(MenuItem)
+        ChildRole = aliased(MenuInRole)
+        ChildUserRole = aliased(UserInRole)
+        ChildRoleTable = aliased(Role)
+
         menus = (
-            MenuItem.query.join(MenuInRole)
-            .join(Role)
-            .join(UserInRole)
-            .filter(UserInRole.user_id == self.id, MenuItem.is_active == True)
-            .options(joinedload(MenuItem.children))  # load children for hierarchy
-            .order_by(MenuItem.order_index)
-            .all()
+            MenuItem.query
+                # Parent joins
+                .join(MenuInRole, MenuItem.id == MenuInRole.menu_id)
+                .join(Role, MenuInRole.role_id == Role.id)
+                .join(UserInRole, Role.id == UserInRole.role_id)
+                .filter(
+                    UserInRole.user_id == self.id,
+                    MenuItem.is_active == True,
+                    MenuItem.parent_id == None   # load only top-level menus first
+                )
+
+                # Child joins (aliased!)
+                .outerjoin(Child, Child.parent_id == MenuItem.id)
+
+                # Child → role
+                .outerjoin(ChildRole, Child.id == ChildRole.menu_id)
+                .outerjoin(ChildRoleTable, ChildRole.role_id == ChildRoleTable.id)
+                .outerjoin(ChildUserRole, ChildRoleTable.id == ChildUserRole.role_id)
+
+                # Keep only children allowed for this user OR if no child
+                .filter(
+                    (Child.id == None) | (ChildUserRole.user_id == self.id)
+                )
+
+                # Tell SQLAlchemy: Child = children relationship
+                .options(contains_eager(MenuItem.children, alias=Child))
+
+                .order_by(MenuItem.order_index)
+                .all()
         )
         return menus
     
+    def get_anonymous_menu():
+        from sqlalchemy.orm import joinedload
+        from app.models import MenuItem, MenuInRole, Role, UserInRole
+
+        from sqlalchemy.orm import contains_eager,aliased
+        """
+        menus = (
+    MenuItem.query
+        .join(MenuInRole)
+        .filter(
+            MenuInRole.role_id == 1,     # Anonymous users = 1
+            MenuItem.is_active == True
+        )
+        .options(
+            joinedload(MenuItem.children)   # Load children for hierarchy
+        )
+        .order_by(MenuItem.order_index)
+        .all()
+)
+        """
+
+        Child = aliased(MenuItem)
+        ChildRole = aliased(MenuInRole)
+
+        menus = (
+            MenuItem.query
+
+                # 1️⃣ Load only top-level menus assigned to role 1
+                .join(MenuInRole, MenuItem.id == MenuInRole.menu_id)
+                .filter(
+                    MenuItem.parent_id == None,    # parent menu
+                    MenuInRole.role_id == 1,
+                    MenuItem.is_active == True
+                )
+
+                .outerjoin(Child, Child.parent_id == MenuItem.id)
+
+                # 3️⃣ Outer join child's role mapping (aliased!)
+                .outerjoin(ChildRole, Child.id == ChildRole.menu_id)
+
+                # 4️⃣ Keep only children allowed for the same role
+                .filter(
+                    (Child.id == None) | (ChildRole.role_id == 1)
+                )
+
+                # 5️⃣ Eager load the children correctly
+                .options(contains_eager(MenuItem.children, alias=Child))
+
+                .order_by(MenuItem.order_index)
+                .all()
+        )
+        return menus
+    
+    # Charts Dashboard methods
+    @classmethod
+    def get_total_users(cls,state_id=None, district_id=None, block_id=None):
+        try:
+            query = cls.query
+            
+            if state_id:
+                query = query.filter_by(state_id=state_id)
+            if district_id:
+                query = query.filter_by(district_id=district_id)
+            if block_id:
+                query = query.filter_by(block_id=block_id)
+            
+            total = query.count()
+            return total
+        except Exception as ex:
+            print(f"Error fetching filtered user count: {ex}")
+            return 0
+
     @classmethod
     def get_user_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
@@ -187,6 +268,10 @@ class User(UserMixin, db.Model):
         # except Exception as ex:
         #     # error_logger.error(f"Error fetching user by id={_id}: {ex}")
         #     return None
+    
+    @classmethod
+    def get_user_by_uuid(cls, uuid):
+        return cls.query.filter_by(uuid=uuid).first()
 
     @classmethod
     def get_user_by_email(cls, email):
@@ -198,32 +283,25 @@ class User(UserMixin, db.Model):
         #         # activity_logger.info(f"User found by email={_email}")
         #         return query.json()
         #     else:
-        #         # activity_logger.info(f"No user found by email={_email}")
         #         return None
         # except Exception as ex:
-        #     # error_logger.error(f"Error fetching user by email={_email}: {ex}")
         #     return None
 
     @classmethod
     def get_all(cls):
         return cls.query.order_by(cls.id.desc())
         # try:
-        #     access_logger.info("Fetching all users")
         #     query = cls.query.order_by(cls.id.desc())
-        #     activity_logger.info("All users queried")
         #     return query
         # except Exception as ex:
-        #     # error_logger.error(f"Error fetching all users: {ex}")
         #     return []
 
     def save(self):
         try:
             db.session.add(self)
             db.session.commit()
-            # activity_logger.info(f"User saved to DB: {self.name} ({self.email}), id={self.id}")
         except Exception as ex:
             db.session.rollback()
-            # error_logger.error(f"Error saving user {self.name} ({self.email}) to DB: {ex}")
 
     @classmethod
     def delete(cls, _id):
@@ -232,29 +310,22 @@ class User(UserMixin, db.Model):
             if user:
                 db.session.delete(user)
                 db.session.commit()
-                # activity_logger.info(f"User deleted from DB: id={_id}")
             else:
-                # activity_logger.info(f"Attempted to delete non-existent user: id={_id}")
                 pass
         except Exception as ex:
             db.session.rollback()
-            # error_logger.error(f"Error deleting user id={_id} from DB: {ex}")
 
     @staticmethod
     def commit_db():
         try:
             db.session.commit()
-            activity_logger.info("DB session committed (user).")
         except Exception as ex:
             db.session.rollback()
-            error_logger.error(f"Error committing DB session (user): {ex}")
 
     @classmethod
     def update_db(cls, data, _id):
         try:
             user = cls.query.filter_by(id=_id).update(data)
             db.session.commit()
-            activity_logger.info(f"User updated in DB: id={_id}, data={data}")
         except Exception as ex:
             db.session.rollback()
-            error_logger.error(f"Error updating user id={_id} in DB: {ex}")

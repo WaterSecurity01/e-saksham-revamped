@@ -1,0 +1,533 @@
+{% extends 'base.html' %}
+{% block title %}
+Update Certification
+{% endblock %}
+{% block content %}
+<div class="d-none d-md-block">
+    <style>
+        .card .pagination { margin-bottom: 0; flex-wrap: wrap; }
+        select:disabled { background-color: #e9ecef !important; cursor: not-allowed; }
+        .search-input::placeholder { color: #6c757d; }
+    </style>
+    <div class="container-fluid m-0 p-0 bg-white d-flex justify-content-center">
+        <div class="row py-5 mb-5">
+            <div class="card py-5 px-3">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="fs-1 fw-semibold">Verify & Update Certificate</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="card shadow-sm p-4">
+                            <!-- Search + Pagination + Filters -->
+                            <div class="d-flex flex-column gap-3 mb-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="flex-grow-1">
+                                        <!-- Search without buttons: triggers on >=3 chars, clears on empty -->
+                                        <input type="search" id="searchInput" class="form-control search-input" placeholder="Search by name or email (type at least 3 characters)...">
+                                    </div>
+                                    <!-- Pagination controls -->
+                                    <nav aria-label="Table pagination">
+                                        <ul class="pagination justify-content-center m-0" id="paginationControls">
+                                            <!-- Populated by JS -->
+                                        </ul>
+                                    </nav>
+                                </div>
+
+                                <!-- Course selection (geo filters available for developers) -->
+                                <div class="row g-2">
+                                    <div class="col-md-3">
+                                        <select class="form-select" id="courseFilter" title="Filter by Course">
+                                            <option value="">Select Course</option>
+                                            {% for course in courses %}
+                                            <option value="{{ course.course_id }}">{{ course.course_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    {% if developer %}
+                                    <div class="col-md-3">
+                                        <select class="form-select" id="stateFilter" title="Filter by State">
+                                            <option value="">All States</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <select class="form-select" id="districtFilter" title="Filter by District" disabled>
+                                            <option value="">All Districts</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <select class="form-select" id="blockFilter" title="Filter by Block" disabled>
+                                            <option value="">All Blocks</option>
+                                        </select>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Table -->
+                            <div class="table-responsive">
+                                <div id="certificateLoader" class="d-none text-center py-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="text-muted mt-3 mb-0">Fetching users..</p>
+                                </div>
+                                <table class="table table-bordered table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th scope="col" style="width: 80px;">S.No.</th>
+                                            <th scope="col">Name</th>
+                                            <th scope="col">Username (Unique)</th>
+                                            {% if developer %}
+                                            <th scope="col">State</th>
+                                            <th scope="col">District</th>
+                                            <th scope="col">Block</th>
+                                            {% endif %}
+                                            <th scope="col" style="width: 140px;">Completed</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="userTableBody">
+                                        <!-- Populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-primary mt-4 form-size" id="btnSubmit" disabled>Submit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Developer flag for JS -->
+<input type="hidden" name="is_developer" id="isDeveloper" value="{{ 'true' if developer else 'false' }}">
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // Flags
+    const isDeveloper = document.getElementById('isDeveloper').value === 'true';
+
+    // Data
+    let allUsers = [];
+    let filteredUsers = [];
+    let currentPage = 1;
+    const rowsPerPage = 10;
+    const pagesToShow = 5;
+
+    // Search/filter state
+    let searchQuery = '';
+    let state_id = '';
+    let district_id = '';
+    let block_id = '';
+
+    // Elements
+    const tableBody = document.getElementById('userTableBody');
+    const paginationControls = document.getElementById('paginationControls');
+    const searchInput = document.getElementById('searchInput');
+    const submit_button = document.getElementById('btnSubmit');
+    const loader = document.getElementById('certificateLoader');
+    const courseFilter = document.getElementById('courseFilter') || null;
+    const stateFilter = document.getElementById('stateFilter') || null;
+    const districtFilter = document.getElementById('districtFilter') || null;
+    const blockFilter = document.getElementById('blockFilter') || null;
+    let selectedCourseId = courseFilter ? courseFilter.value : '';
+
+    // Utils
+    let debounceTimer = null;
+    function debounce(fn, delay = 300) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(fn, delay);
+    }
+    function getSelectedText(selectEl) {
+        if (!selectEl) return '';
+        const opt = selectEl.options[selectEl.selectedIndex];
+        return opt ? opt.text.trim() : '';
+    }
+    function escapeHtml(str = '') {
+        return (str || '').toString().replace(/[&<>"'`=\/]/g, s => ({
+            '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'
+        }[s]));
+    }
+    function setDisabledCascades() {
+        if (!isDeveloper || !districtFilter || !blockFilter) return;
+        districtFilter.disabled = !state_id;
+        blockFilter.disabled = !district_id;
+    }
+    function renderEmptyState(message, variant = 'muted') {
+        const colCount = isDeveloper ? 7 : 4;
+        tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center text-${variant}">${message}</td></tr>`;
+        paginationControls.innerHTML = '';
+        if (submit_button) submit_button.setAttribute('disabled', 'disabled');
+    }
+
+    // Fetch lists (developer only)
+    async function fetchStates() {
+        if (!isDeveloper || !stateFilter) return;
+        try {
+            const res = await fetch('/api/states');
+            const data = await res.json();
+            data.sort((a,b)=>a.name.localeCompare(b.name));
+            stateFilter.innerHTML = `<option value="">All States</option>` +
+                data.map(st => `<option value="${st.id}">${escapeHtml(st.name)}</option>`).join('');
+        } catch (e) { console.error('Failed to load states', e); }
+    }
+    async function fetchDistricts(stateId) {
+        if (!isDeveloper || !districtFilter) return;
+        districtFilter.innerHTML = `<option value="">All Districts</option>`;
+        if (!stateId) return;
+        try {
+            const res = await fetch(`/api/districts?state_id=${stateId}`);
+            const data = await res.json();
+            data.sort((a,b)=>a.name.localeCompare(b.name));
+            districtFilter.innerHTML = `<option value="">All Districts</option>` +
+                data.map(dt => `<option value="${dt.id}">${escapeHtml(dt.name)}</option>`).join('');
+        } catch (e) { console.error('Failed to load districts', e); }
+    }
+    async function fetchBlocks(districtId) {
+        if (!isDeveloper || !blockFilter) return;
+        blockFilter.innerHTML = `<option value="">All Blocks</option>`;
+        if (!districtId) return;
+        try {
+            const res = await fetch(`/api/blocks?district_id=${districtId}`);
+            const data = await res.json();
+            data.sort((a,b)=>a.name.localeCompare(b.name));
+            blockFilter.innerHTML = `<option value="">All Blocks</option>` +
+                data.map(bl => `<option value="${bl.id}">${escapeHtml(bl.name)}</option>`).join('');
+        } catch (e) { console.error('Failed to load blocks', e); }
+    }
+
+    // Fetch users (developer returns geo fields too)
+    async function fetchUsers() {
+        try {
+            if (loader) loader.classList.remove('d-none');
+            tableBody.innerHTML = '';
+            paginationControls.innerHTML = '';
+            if (submit_button) submit_button.setAttribute('disabled', 'disabled');
+
+            if (!selectedCourseId) {
+                allUsers = [];
+                filteredUsers = [];
+                renderEmptyState('Select a course to view users awaiting certificates.');
+                if (loader) loader.classList.add('d-none');
+                return;
+            }
+
+            const response = await fetch(`/api/get_users_certificate?course_id=${encodeURIComponent(selectedCourseId)}`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+
+            allUsers = Array.isArray(data) ? data.map(u => ({
+                name: u.name || '',
+                email: u.email || '',
+                is_completed: !!u.is_completed,
+                state_id: u.state_id ?? null,
+                district_id: u.district_id ?? null,
+                block_id: u.block_id ?? null,
+                state_name: u.state_name || '',
+                state_short_name: u.state_short_name || '',
+                district_name: u.district_name || '',
+                block_name: u.block_name || ''
+            })) : [];
+
+            filteredUsers = [];
+            currentPage = 1;
+            applyFilters({ resetPage: true });
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            allUsers = [];
+            filteredUsers = [];
+            renderEmptyState('Failed to load data. Please try again later.', 'danger');
+        } finally {
+            if (loader) loader.classList.add('d-none');
+        }
+    }
+
+    // Filters + search (local)
+    function applyFilters({ resetPage = false } = {}) {
+        const q = (searchQuery || '').toLowerCase().trim();
+
+        const selectedStateName = (isDeveloper && state_id && stateFilter) ? getSelectedText(stateFilter) : '';
+        const selectedDistrictName = (isDeveloper && district_id && districtFilter) ? getSelectedText(districtFilter) : '';
+        const selectedBlockName = (isDeveloper && block_id && blockFilter) ? getSelectedText(blockFilter) : '';
+
+        filteredUsers = allUsers.filter(u => {
+            // search
+            if (q) {
+                const name = (u.name || '').toLowerCase();
+                const email = (u.email || '').toLowerCase();
+                if (!(name.includes(q) || email.includes(q))) return false;
+            }
+
+            // geo filters (developer only)
+            if (isDeveloper) {
+                if (state_id) {
+                    const uid = u.state_id != null ? String(u.state_id) : '';
+                    const uname = (u.state_name || u.state_short_name || '').toString().trim();
+                    if (!(uid === String(state_id) || (uname && uname === selectedStateName))) return false;
+                }
+                if (district_id) {
+                    const uid = u.district_id != null ? String(u.district_id) : '';
+                    const uname = (u.district_name || '').toString().trim();
+                    if (!(uid === String(district_id) || (uname && uname === selectedDistrictName))) return false;
+                }
+                if (block_id) {
+                    const uid = u.block_id != null ? String(u.block_id) : '';
+                    const uname = (u.block_name || '').toString().trim();
+                    if (!(uid === String(block_id) || (uname && uname === selectedBlockName))) return false;
+                }
+            }
+            return true;
+        });
+
+        if (resetPage) currentPage = 1;
+        // If currentPage > total pages after filtering, clamp
+        const totalPages = Math.max(1, Math.ceil(filteredUsers.length / rowsPerPage));
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        render(filteredUsers);
+    }
+
+    // Render
+    function displayTable(data, page) {
+        if (!data.length) {
+            const message = selectedCourseId
+                ? 'No users pending for this course.'
+                : 'Select a course to view users awaiting certificates.';
+            renderEmptyState(message);
+            return;
+        }
+
+        tableBody.innerHTML = '';
+        const start = (page - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const paginatedItems = data.slice(start, end);
+
+        paginatedItems.forEach((user, index) => {
+            const stateText = user.state_short_name || user.state_name || '';
+            const districtText = user.district_name || '';
+            const blockText = user.block_name || '';
+
+            const extraCols = isDeveloper ? `
+                <td>${escapeHtml(stateText)}</td>
+                <td>${escapeHtml(districtText)}</td>
+                <td>${escapeHtml(blockText)}</td>
+            ` : '';
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${start + index + 1}</td>
+                <td>${escapeHtml(user.name)}</td>
+                <td>${escapeHtml(user.email)}</td>
+                ${extraCols}
+                <td class="text-center">
+                    <div class="form-check d-flex justify-content-center m-0">
+                        <input class="form-check-input completion-checkbox" type="checkbox" data-email="${escapeHtml(user.email)}" ${user.is_completed ? 'checked' : ''}>
+                    </div>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        // Enable/disable submit button
+        const anyCompleted = allUsers.some(u => u.is_completed);
+        if (submit_button) {
+            if (anyCompleted) submit_button.removeAttribute('disabled');
+            else submit_button.setAttribute('disabled','disabled');
+        }
+
+        // Attach checkbox listeners
+        document.querySelectorAll('.completion-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (event) => {
+                const userEmail = event.target.dataset.email;
+                const u = allUsers.find(x => x.email === userEmail);
+                if (u) u.is_completed = event.target.checked;
+                const any = allUsers.some(x => x.is_completed);
+                if (any) submit_button.removeAttribute('disabled');
+                else submit_button.setAttribute('disabled','disabled');
+            });
+        });
+    }
+    function displayPagination(data) {
+        paginationControls.innerHTML = '';
+        const pageCount = Math.ceil(data.length / rowsPerPage);
+        if (pageCount <= 1) return;
+
+        function addItem(label, target, disabled=false, active=false, title='') {
+            const li = document.createElement('li');
+            li.className = `page-item ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="#" ${title ? `title="${title}"` : ''}>${label}</a>`;
+            if (!disabled && !active) {
+                li.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    currentPage = target;
+                    render(filteredUsers);
+                });
+            }
+            paginationControls.appendChild(li);
+        }
+
+        addItem('«', 1, currentPage === 1, false, 'First');
+        addItem('‹', Math.max(1, currentPage - 1), currentPage === 1, false, 'Previous');
+
+        let startPage = Math.max(1, currentPage - Math.floor(pagesToShow / 2));
+        let endPage = Math.min(pageCount, startPage + pagesToShow - 1);
+        if (endPage - startPage + 1 < pagesToShow && endPage === pageCount) {
+            startPage = Math.max(1, endPage - pagesToShow + 1);
+        }
+
+        if (startPage > 1) addItem(1, 1, false, currentPage === 1);
+        if (startPage > 2) {
+            const sep = document.createElement('li');
+            sep.className = 'page-item disabled';
+            sep.innerHTML = '<a class="page-link" href="#">...</a>';
+            paginationControls.appendChild(sep);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            addItem(i, i, false, i === currentPage);
+        }
+
+        if (endPage < pageCount - 1) {
+            const sep = document.createElement('li');
+            sep.className = 'page-item disabled';
+            sep.innerHTML = '<a class="page-link" href="#">...</a>';
+            paginationControls.appendChild(sep);
+        }
+        if (endPage < pageCount) {
+            addItem(pageCount, pageCount, false, currentPage === pageCount);
+        }
+
+        addItem('›', Math.min(pageCount, currentPage + 1), currentPage === pageCount, false, 'Next');
+        addItem('»', pageCount, currentPage === pageCount, false, 'Last');
+    }
+    function render(data) {
+        displayTable(data, currentPage);
+        displayPagination(data);
+    }
+
+    // Search: trigger on >=3 chars; reset on empty; ignore 1-2 chars
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            const val = searchInput.value || '';
+            debounce(() => {
+                if (val.length === 0) {
+                    searchQuery = '';
+                    applyFilters({ resetPage: true });
+                } else if (val.length >= 3) {
+                    searchQuery = val;
+                    applyFilters({ resetPage: true });
+                }
+                // For 1-2 chars: do nothing (no filter yet)
+            }, 300);
+        });
+    }
+
+    if (courseFilter) {
+        courseFilter.addEventListener('change', async function() {
+            selectedCourseId = this.value;
+            searchQuery = '';
+            if (searchInput) searchInput.value = '';
+            if (isDeveloper) {
+                state_id = '';
+                district_id = '';
+                block_id = '';
+                if (stateFilter) stateFilter.value = '';
+                if (districtFilter) {
+                    districtFilter.value = '';
+                    districtFilter.innerHTML = `<option value="">All Districts</option>`;
+                }
+                if (blockFilter) {
+                    blockFilter.value = '';
+                    blockFilter.innerHTML = `<option value="">All Blocks</option>`;
+                }
+                setDisabledCascades();
+            }
+            await fetchUsers();
+        });
+    }
+
+    // Cascading filter events (developer only)
+    if (isDeveloper && stateFilter) {
+        stateFilter.addEventListener('change', async function() {
+            state_id = this.value;
+            district_id = '';
+            block_id = '';
+            if (districtFilter) districtFilter.innerHTML = `<option value="">All Districts</option>`;
+            if (blockFilter) blockFilter.innerHTML = `<option value="">All Blocks</option>`;
+            setDisabledCascades();
+            if (state_id) {
+                await fetchDistricts(state_id);
+                if (districtFilter) districtFilter.disabled = false;
+            }
+            applyFilters({ resetPage: true });
+        });
+    }
+    if (isDeveloper && districtFilter) {
+        districtFilter.addEventListener('change', async function() {
+            district_id = this.value;
+            block_id = '';
+            if (blockFilter) blockFilter.innerHTML = `<option value="">All Blocks</option>`;
+            setDisabledCascades();
+            if (district_id) {
+                await fetchBlocks(district_id);
+                if (blockFilter) blockFilter.disabled = false;
+            }
+            applyFilters({ resetPage: true });
+        });
+    }
+    if (isDeveloper && blockFilter) {
+        blockFilter.addEventListener('change', function() {
+            block_id = this.value;
+            setDisabledCascades();
+            applyFilters({ resetPage: true });
+        });
+    }
+
+    // Submit handler (sends selected emails)
+    if (submit_button) {
+        submit_button.addEventListener('click', async () => {
+            if (!selectedCourseId) {
+                alert('Please select a course before updating certificates.');
+                return;
+            }
+            const completedUsers = allUsers.filter(user => user.is_completed);
+            if (!completedUsers.length) {
+                alert('Select at least one user before submitting.');
+                return;
+            }
+            try {
+                const response = await fetch('/api/update_completion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        course_id: Number(selectedCourseId),
+                        users: completedUsers.map(user => ({ email: user.email }))
+                    }),
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Update successful:', result);
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    console.error('Update failed:', errorData);
+                }
+            } catch (error) {
+                console.error('An error occurred:', error);
+            }
+        });
+    }
+
+    // Init
+    (async function init() {
+        if (isDeveloper) {
+            setDisabledCascades();
+            await fetchStates();
+        }
+        await fetchUsers();
+    })();
+});
+</script>
+{% endblock %}

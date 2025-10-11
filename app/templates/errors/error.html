@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 text-center">
+            <div class="position-relative d-inline-block mb-4">
+                <div class="rounded-circle bg-{{ accent }}-subtle p-4 shadow-sm">
+                    <i class="fa-solid fa-5x fa-circle-exclamation text-{{ accent }}"></i>
+                </div>
+            </div>
+
+            <p class="text-uppercase text-muted fw-semibold mb-2" style="letter-spacing: 0.2rem;">Error {{ status_code }}</p>
+            <h1 class="display-5 fw-bold mb-3">{{ title }}</h1>
+            <p class="lead text-muted mb-4">
+                {{ subtitle }}
+            </p>
+            <p class="text-muted small mb-4">
+                Request: <code>{{ method }}</code> {{ request_path }}
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{{ url_for('routes.index') }}" class="btn btn-outline-secondary px-4">
+                    Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

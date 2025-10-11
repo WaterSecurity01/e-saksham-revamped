@@ -1,0 +1,518 @@
+{%extends 'base.html'%}
+{% block title %}
+All States
+{%endblock%}
+{% block content %}
+<div class="container-fluid m-2 drill-chart-page">
+    <div class="row">
+        <div class="col-12">
+            <!-- Breadcrumb Navigation -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2" id="breadcrumb">
+                    <li class="breadcrumb-item active">INDIA</li>
+                </ol>
+            </nav>
+            <div class="row d-flex justify-content-between mb-2">
+                <div class="col-6">
+                    <!-- Back Button -->
+                    <div id="backButtonContainer" class="back-btn" style="display: none;">
+                        <button class="btn btn-secondary btn-sm no-loader" onclick="goBack()">
+                            ← Back
+                        </button>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="d-grid justify-content-end align-items-end mb-2">
+                        <a href="{{ url_for('dashboard.charts') }}" class="btn btn-sm btn-outline-dark">
+                            Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div id="chartContainer">
+                <div id="barChart"></div>
+            </div>
+
+            <!-- Table Container -->
+            <div id="tableContainer" class="table-container" style="display: none;">
+                <div id="tableContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<input type="hidden" name="bar_chart_data" id="barChartData" value='{{ bar_chart_data | tojson | safe }}'>
+
+<script src="{{url_for('static',filename='js/echarts.min.js')}}"></script>
+<script>
+    // ECharts bar chart with ID-based drilldown mapping to avoid duplicate short-name collisions
+
+    var chart = echarts.init(document.getElementById('barChart'));
+    var navigationStack = [];
+    var currentLevel = 'states';
+    const barChartData = JSON.parse(document.getElementById("barChartData").value);
+
+    // Maintain ordered lists for each level to map clicks by index -> record with id
+    var currentStatesList = [];
+    var currentDistrictsList = [];
+    var currentBlocksList = [];
+
+    function updateBreadcrumb(items) {
+        const breadcrumb = document.getElementById('breadcrumb');
+        breadcrumb.innerHTML = '';
+        items.forEach((item, index) => {
+            const li = document.createElement('li');
+            li.className = index === items.length - 1 ? 'breadcrumb-item active text-secondary' : 'breadcrumb-item text-secondary';
+            li.textContent = item;
+            breadcrumb.appendChild(li);
+        });
+    }
+
+    function showBackButton() {
+        document.getElementById('backButtonContainer').style.display = 'block';
+    }
+    function hideBackButton() {
+        document.getElementById('backButtonContainer').style.display = 'none';
+    }
+    function showChart() {
+        document.getElementById('chartContainer').style.display = 'block';
+        document.getElementById('tableContainer').style.display = 'none';
+    }
+    function showTable() {
+        document.getElementById('chartContainer').style.display = 'none';
+        document.getElementById('tableContainer').style.display = 'block';
+    }
+
+    function tooltipFormatter(params) {
+        const p = Array.isArray(params) ? params[0] : params;
+        const d = p && p.data ? p.data : null;
+        const label = d && (d.full_name || d.label) ? (d.full_name || d.label) : (p.name || '');
+        return `${label}: ${p.value} users`;
+    }
+
+    function loadStates() {
+        currentLevel = 'states';
+        navigationStack = [];
+        hideBackButton();
+        showChart();
+        updateBreadcrumb(['INDIA']);
+
+        const states = barChartData.states || [];
+        currentStatesList = states.slice(); // keep display order
+
+        chart.setOption({
+            tooltip: { trigger: 'axis', formatter: tooltipFormatter },
+            xAxis: {
+                type: 'category',
+                data: currentStatesList.map(d => d.short_name || d.name),
+                axisLabel: { rotate: 0 }
+            },
+            yAxis: { type: 'value', name: 'Number of Users' },
+            series: [{
+                type: 'bar',
+                data: currentStatesList.map(d => ({
+                    value: d.value,
+                    id: d.id,
+                    label: d.short_name || d.name,
+                    full_name: d.name
+                })),
+                itemStyle: { color: '#0d6efd', borderRadius: [4, 4, 0, 0] },
+                emphasis: { itemStyle: { color: '#0056b3' } }
+            }]
+        });
+
+        chart.off('click');
+        chart.on('click', function (params) {
+            const idx = params.dataIndex;
+            const state = currentStatesList[idx];
+            if (state) {
+                navigationStack.push({
+                    level: 'states',
+                    stateId: 0,
+                    districtId: 0,
+                    blockId: 0,
+                    stateName: 'INDIA'
+                });
+                loadDistricts(state.id, state.name);
+            }
+        });
+    }
+
+    function loadDistricts(stateId, stateName) {
+        currentLevel = 'districts';
+        showBackButton();
+        showChart();
+        updateBreadcrumb(['INDIA', stateName]);
+
+        const districtData = (barChartData.districts && barChartData.districts[stateId]) ? barChartData.districts[stateId] : [];
+        currentDistrictsList = districtData.slice();
+
+        chart.setOption({
+            tooltip: { trigger: 'axis', formatter: tooltipFormatter },
+            xAxis: {
+                type: 'category',
+                data: currentDistrictsList.map(d => d.short_name || d.name),
+                axisLabel: { rotate: 0, interval: 0 }
+            },
+            yAxis: { type: 'value', name: 'Number of Users' },
+            series: [{
+                type: 'bar',
+                data: currentDistrictsList.map(d => ({
+                    value: d.value,
+                    id: d.id,
+                    label: d.short_name || d.name,
+                    full_name: d.name
+                })),
+                itemStyle: { color: '#198754', borderRadius: [4, 4, 0, 0] },
+                emphasis: { itemStyle: { color: '#146c43' } }
+            }]
+        });
+
+        chart.off('click');
+        chart.on('click', function (params) {
+            const idx = params.dataIndex;
+            const district = currentDistrictsList[idx];
+            if (district) {
+                navigationStack.push({
+                    level: 'districts',
+                    stateId: stateId,
+                    districtId: 0,
+                    blockId: 0,
+                    stateName: stateName
+                });
+                loadBlocks(district.id, district.name, stateName, stateId);
+            }
+        });
+    }
+
+    function loadBlocks(districtId, districtName, stateName, stateId) {
+        currentLevel = 'blocks';
+        showBackButton();
+        showChart();
+        updateBreadcrumb(['INDIA', stateName, districtName]);
+
+        const blockData = (barChartData.blocks && barChartData.blocks[districtId]) ? barChartData.blocks[districtId] : [];
+        currentBlocksList = blockData.slice();
+
+        chart.setOption({
+            tooltip: { trigger: 'axis', formatter: tooltipFormatter },
+            xAxis: {
+                type: 'category',
+                data: currentBlocksList.map(d => d.short_name || d.name),
+                axisLabel: { rotate: 0, interval: 0 }
+            },
+            yAxis: { type: 'value', name: 'Number of Users' },
+            series: [{
+                type: 'bar',
+                data: currentBlocksList.map(d => ({
+                    value: d.value,
+                    id: d.id,
+                    label: d.short_name || d.name,
+                    full_name: d.name
+                })),
+                itemStyle: { color: '#fd7e14', borderRadius: [4, 4, 0, 0] },
+                emphasis: { itemStyle: { color: '#e55100' } }
+            }]
+        });
+
+        chart.off('click');
+        chart.on('click', function (params) {
+            const idx = params.dataIndex;
+            const block = currentBlocksList[idx];
+            if (block) {
+                navigationStack.push({
+                    level: 'blocks',
+                    stateId: stateId,
+                    districtId: districtId,
+                    blockId: 0,
+                    stateName: stateName,
+                    districtName: districtName
+                });
+                loadUsers(block.id, block.name, districtName, stateName, stateId, districtId);
+            }
+        });
+    }
+
+    // User table variables
+    let currentPage = 1;
+    const usersPerPage = 10;
+    let currentSortColumn = null;
+    let currentSortDirection = 'asc';
+    let currentUsers = [];
+    let currentBlockName = "";
+    let filteredUsers = [];
+
+    function loadUsers(blockId, blockName, districtName, stateName, stateId, districtId) {
+        currentLevel = 'users';
+        showBackButton();
+        showTable();
+        updateBreadcrumb(['INDIA', stateName, districtName, blockName]);
+
+        currentUsers = (barChartData.users && barChartData.users[blockId]) ? barChartData.users[blockId] : [];
+        currentBlockName = blockName;
+        currentPage = 1;
+        currentSortColumn = null;
+        currentSortDirection = 'asc';
+        window.currentSearchValue = '';
+        filteredUsers = [...currentUsers];
+        renderUserTable();
+    }
+
+    function goBack() {
+        if (navigationStack.length === 0) {
+            loadStates();
+            return;
+        }
+
+        const previousState = navigationStack.pop();
+        if (!previousState) {
+            loadStates();
+            return;
+        }
+
+        switch (previousState.level) {
+            case 'states':
+                loadStates();
+                break;
+            case 'districts':
+                loadDistricts(previousState.stateId, previousState.stateName);
+                break;
+            case 'blocks':
+                loadBlocks(previousState.districtId, previousState.districtName, previousState.stateName, previousState.stateId);
+                break;
+            case 'users':
+                loadUsers(previousState.blockId, previousState.blockName, previousState.districtName, previousState.stateName, previousState.stateId, previousState.districtId);
+                break;
+        }
+    }
+
+    // User table functions
+    function applySearchFilter() {
+        const searchVal = (window.currentSearchValue || "").toLowerCase();
+        if (searchVal) {
+            filteredUsers = currentUsers.filter(u =>
+                (u.name && u.name.toLowerCase().includes(searchVal)) ||
+                (u.email && u.email.toLowerCase().includes(searchVal)) ||
+                (u.course && u.course.toLowerCase().includes(searchVal))
+            );
+        } else {
+            filteredUsers = [...currentUsers];
+        }
+    }
+
+    function toSentenceCase(str) {
+        if (!str) return '';
+        str = str.toLowerCase();
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function applySorting() {
+        if (currentSortColumn !== null) {
+            filteredUsers.sort((a, b) => {
+                let valA, valB;
+                switch (currentSortColumn) {
+                    case 0: valA = (a.name || '').toLowerCase(); valB = (b.name || '').toLowerCase(); break;
+                    case 1: valA = (a.email || '').toLowerCase(); valB = (b.email || '').toLowerCase(); break;
+                    case 2: valA = (a.course || '').toLowerCase(); valB = (b.course || '').toLowerCase(); break;
+                    case 3: valA = new Date(a.timestamp); valB = new Date(b.timestamp); break;
+                    default: return 0;
+                }
+                if (valA < valB) return currentSortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+    }
+
+    function renderUserTable() {
+        applySearchFilter();
+        applySorting();
+        const totalUsers = filteredUsers.length;
+        const totalPages = Math.ceil(totalUsers / usersPerPage);
+        if (currentPage > totalPages && totalPages > 0) {
+            currentPage = totalPages;
+        }
+        const startIndex = (currentPage - 1) * usersPerPage;
+        const paginatedUsers = filteredUsers.slice(startIndex, startIndex + usersPerPage);
+        const currentSearchValue = window.currentSearchValue || '';
+
+        let html = `
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="text-primary mb-0">Users in ${escapeHtml(currentBlockName)}</h5>
+        <small class="text-muted">Showing ${Math.min(startIndex + 1, totalUsers)}-${Math.min(startIndex + usersPerPage, totalUsers)} of ${totalUsers}</small>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <input type="text" class="form-control form-control-sm ms-1" 
+                   id="searchInput" 
+                   placeholder="🔍 Search by name, email or course..." 
+                   value="${escapeHtml(currentSearchValue)}">
+        </div>
+        <div class="col-md-6">
+            <div id="paginationContainer"></div>
+        </div>
+    </div>
+
+    <div id="tableWrapper" style="max-height:500px; overflow-y:auto; overflow-x:hidden;">
+        <table class="table table-striped table-hover table-sm mb-0" id="userTableData">
+            <thead class="">
+                <tr>
+                    <th onclick="sortTable(0)" 
+                        style="cursor:pointer; position:sticky; top:0; background:#cfe2ff; z-index:1;">
+                        Name <span id="sort-0">${getSortIcon(0)}</span>
+                    </th>
+                    <th onclick="sortTable(1)" 
+                        style="cursor:pointer; position:sticky; top:0; background:#cfe2ff; z-index:1;">
+                        Email <span id="sort-1">${getSortIcon(1)}</span>
+                    </th>
+                    <th onclick="sortTable(2)" 
+                        style="cursor:pointer; position:sticky; top:0; background:#cfe2ff; z-index:1;">
+                        Course <span id="sort-2">${getSortIcon(2)}</span>
+                    </th>
+                    <th onclick="sortTable(3)" 
+                        style="cursor:pointer; position:sticky; top:0; background:#cfe2ff; z-index:1;">
+                        Completed On <span id="sort-3">${getSortIcon(3)}</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        if (paginatedUsers.length === 0) {
+            html += `
+        <tr>
+            <td colspan="4" class="text-center text-muted py-4">
+                ${totalUsers === 0 ? 'No users found in this block.' : 'No users match your search criteria.'}
+            </td>
+        </tr>`;
+        } else {
+            paginatedUsers.forEach(u => {
+                html += `
+        <tr>
+            <td><strong>${toSentenceCase(escapeHtml(u.name || ''))}</strong></td>
+            <td style="font-size:0.85rem;">${escapeHtml(u.email || '')}</td>
+            <td style="font-size:0.85rem;">${escapeHtml(u.course || '')}</td>
+            <td style="font-size:0.85rem;">${formatDate(u.timestamp)}</td>
+        </tr>`;
+            });
+        }
+
+        html += `
+            </tbody>
+        </table>
+    </div>`;
+
+        document.getElementById('tableContent').innerHTML = html;
+        renderPagination(totalUsers, totalPages);
+
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', function (e) {
+                window.currentSearchValue = e.target.value;
+                currentPage = 1;
+                renderUserTable();
+            });
+        }
+        setupPaginationEvents();
+    }
+
+    function getSortIcon(columnIndex) {
+        if (currentSortColumn === columnIndex) {
+            return currentSortDirection === 'asc' ? '↑' : '↓';
+        }
+        return '↕';
+    }
+
+    function renderPagination(totalUsers, totalPages) {
+        let paginationHtml = '';
+        if (totalPages > 1) {
+            paginationHtml = `<nav><ul class="pagination pagination-sm justify-content-end mb-0">`;
+            const prevDisabled = currentPage === 1;
+            paginationHtml += `
+            <li class="page-item ${prevDisabled ? 'disabled' : ''}">
+                <button class="page-link" data-page="${currentPage - 1}" ${prevDisabled ? 'disabled' : ''}>‹</button>
+            </li>`;
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+            if (endPage - startPage < 4) {
+                startPage = Math.max(1, endPage - 4);
+            }
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHtml += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <button class="page-link" data-page="${i}">${i}</button>
+                </li>`;
+            }
+            const nextDisabled = currentPage === totalPages;
+            paginationHtml += `
+            <li class="page-item ${nextDisabled ? 'disabled' : ''}">
+                <button class="page-link" data-page="${currentPage + 1}" ${nextDisabled ? 'disabled' : ''}>›</button>
+            </li>`;
+            paginationHtml += `</ul></nav>`;
+        }
+        const container = document.getElementById('paginationContainer');
+        if (container) {
+            container.innerHTML = paginationHtml;
+        }
+    }
+
+    function setupPaginationEvents() {
+        const container = document.getElementById('paginationContainer');
+        if (container) {
+            container.querySelectorAll('button[data-page]').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const page = Number(btn.getAttribute('data-page'));
+                    if (!isNaN(page) && !btn.disabled && !btn.classList.contains('disabled')) {
+                        currentPage = page;
+                        renderUserTable();
+                    }
+                });
+            });
+        }
+    }
+
+    function sortTable(columnIndex) {
+        if (currentSortColumn === columnIndex) {
+            currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSortColumn = columnIndex;
+            currentSortDirection = 'asc';
+        }
+        currentPage = 1;
+        renderUserTable();
+    }
+
+    function escapeHtml(text) {
+        text = (text || '').toString();
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return text.replace(/[&<>"']/g, function (m) { return map[m]; });
+    }
+
+    function formatDate(dateString) {
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleDateString('en-IN', {
+                year: 'numeric', month: 'short', day: 'numeric'
+            });
+        } catch (e) {
+            return dateString || '';
+        }
+    }
+
+    // Event listeners
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && navigationStack.length > 0) {
+            goBack();
+        }
+    });
+
+    window.toSentenceCase = toSentenceCase;
+    window.addEventListener('resize', function () {
+        chart.resize();
+    });
+
+    // Initialize
+    loadStates();
+</script>
+{%endblock%}

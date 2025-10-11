@@ -1,32 +1,54 @@
 {% extends 'base.html' %}
 {% block title %} Courses {% endblock %}
 {% block content %}
-<div class="container-fluid">
-    <div class="d-flex flex-wrap">
+    <div class="d-flex flex-wrap pt-5 justify-content-center">
+        {% if courses %}
         {% for course in courses %}
-        <div class="w-25 m-3">
-            <div class="card">
-            <h5 class="card-header">{{course.name}} </h5>
-            <div class="card-body">
-                <h5 class="card-title">{{course.manifest_title}}</h5>
-                <p class="card-text">{{course.description}}</p>
-                <a href="{{'/course/%s' % course.id}}" class="btn btn-primary">View Course</a>
+            <div class="card col-3 m-4">
+                <div class="row h-100">
+                    <div class="col-4">
+                        <div class="d-flex justify-content-center align-items-center h-100 mx-2">
+                            <img src="{{url_for('static',filename='assets/mgnrega_logo.jpeg')}}" class="img-fluid m-2" alt="MGNREGA Logo">
+                        </div>
+                    </div>
+                    <div class="col-8">
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <div class="fs-3">{{course.name}}</div> 
+                            <hr>
+                            <p class="fs-5 my-2 text-start">{{ course.description[:80] + '...' if course.description and course.description|length > 100 else course.description }}</p>
+                            <hr>
+                            <a href="{{'/course/%s' % course.id}}" class="btn btn-primary">View Course</a>
+                        </div>                        
+                    </div>
+                    </div>
+                </div>
             </div>
+        {% endfor %}
+        {% else %}
+        <div class="d-flex justify-content-center">
+            <div class="card">
+                <div class="row">
+                    <div class="col-4">
+                        <div class="d-flex justify-content-center align-items-center h-100 mx-2">
+                            <img src="{{url_for('static',filename='assets/mgnrega_logo.jpeg')}}" class="img-fluid p-5" alt="MGNREGA Logo">
+                        </div>
+                    </div>
+                    <div class="col-8">
+                    <div class="card-body">
+                        <div class="d-grid gap-3">
+                        <div class="fs-3">No Courses Uploaded Yet</div>
+                        <hr>
+                        <p class="fs-5 my-2 text-start">There are no courses uploaded yet. Please come back later sometime. </p>
+                        <hr>
+                        <a href="#" class="btn btn-primary" disabled="disabled">View Course</a>
+                        </div>
+                    </div>
+                    </div>
+                </div>
             </div>
         </div>
-        {% endfor %}
+        {% endif %}
     </div>
-</div>
-
-
-{#<!-- <div class="card-body">
-                <h5 class="card-title">Special title treatment</h5>
-                <p class="card-text"><strong>Course Description:</strong>{{course.description}}</p>
-                <p class="card-text"><strong>Course Launch URL:</strong>{{course.launch_url}}</p>
-                <p class="card-text"><strong>Course ID:</strong>{{course.package_id}}</p>
-                <p class="card-text"><strong>User:</strong>{{user.name}}</p>
-                <p class="card-text"><strong>User ID:</strong>{{user.email}}</p>
-                <a href="{{'/course/%s' % course.id}}" class="btn btn-primary">View Course</a>
-            </div> -->#}
 
 {% endblock %}

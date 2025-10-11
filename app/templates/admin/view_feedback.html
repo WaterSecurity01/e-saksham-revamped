@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %} View Feedback {% endblock %}
+{% block content %}
+<div class="d-flex m-2 justify-content-end w-100">
+    <a href="{{ url_for('admin.export_feedback') }}" class="btn btn-primary mb-3 me-4">Export as CSV</a>
+</div>
+<div class="container pt-5">
+    <table class="table table-bordered table-sm">
+        <thead >
+            <tr class="table-light text-center">
+                <th>#</th>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Category</th>
+                <th>Subject</th>
+                <th>Message</th>
+                <th>Rating</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for feedback in feedbacks %}
+            <tr>
+                <td>{{loop.index}}</td>
+                <td>{{feedback.created_at}}</td>
+                <td>{{feedback.name}}</td>
+                <td>{{feedback.email}}</td>
+                <td>{{feedback.message_category}}</td>
+                <td>{{feedback.subject}}</td>
+                <td>{{feedback.message}}</td>
+                <td>{{feedback.rating}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

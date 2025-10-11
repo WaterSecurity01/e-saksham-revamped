@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Certificate Verification{% endblock %}
+{% block content %}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white text-center py-4">
+                    <h4 class="card-title mb-0 text-primary">Certificate Verification</h4>
+                </div>
+                <div class="card-body p-4">
+                    {% if error %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ error }}
+                    </div>
+                    {% elif certificate %}
+                    <div class="mb-4">
+                        <h5 class="text-secondary fw-semibold mb-3">Learner Details</h5>
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <div class="border rounded p-3 bg-light-subtle">
+                                    <small class="text-muted text-uppercase">Name</small>
+                                    <div class="fw-semibold text-dark">{{ certificate.user_name or user.name }}</div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="border rounded p-3 bg-light-subtle">
+                                    <small class="text-muted text-uppercase">Email</small>
+                                    <div class="fw-semibold text-dark">{{ certificate.user_email or user.email }}</div>
+                                </div>
+                            </div>
+                            {% if certificate.state_name or certificate.district_name or certificate.block_name %}
+                            <div class="col-sm-4">
+                                <div class="border rounded p-3 bg-light-subtle">
+                                    <small class="text-muted text-uppercase">State</small>
+                                    <div class="fw-semibold text-dark">{{ certificate.state_name or '—' }}</div>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="border rounded p-3 bg-light-subtle">
+                                    <small class="text-muted text-uppercase">District</small>
+                                    <div class="fw-semibold text-dark">{{ certificate.district_name or '—' }}</div>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="border rounded p-3 bg-light-subtle">
+                                    <small class="text-muted text-uppercase">Block</small>
+                                    <div class="fw-semibold text-dark">{{ certificate.block_name or '—' }}</div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5 class="text-secondary fw-semibold mb-3">Course Information</h5>
+                        <div class="border rounded p-3 bg-light-subtle">
+                            <small class="text-muted text-uppercase">Course</small>
+                            <div class="fw-semibold text-dark mb-2">{{ certificate.course_name }}</div>
+                            {% if certificate.course_description %}
+                            <p class="mb-0 text-muted">{{ certificate.course_description }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5 class="text-secondary fw-semibold mb-3">Certificate Status</h5>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="badge bg-success fs-6 px-3 py-2">Verified</span>
+                            {% if certificate.certificate_timestamp %}
+                            <span class="text-muted">Issued on {{ certificate.certificate_timestamp.strftime('%d %b %Y, %I:%M %p') }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <a href="{{ url_for('routes.index') }}" class="btn btn-outline-primary">Back to Home</a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning" role="alert">
+                        Certificate details unavailable.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

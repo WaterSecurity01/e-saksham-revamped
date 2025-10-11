@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<!-- Desktop -->
+<div class="d-none d-md-block">
+    <div class="container-fluid m-0 p-0 bg-white d-flex justify-content-center">
+        <div class="row py-5 mb-5" style="width: 50%;">
+            <!-- Added PRINT button BEFORE the card (as requested) -->
+            <div class="d-flex justify-content-end align-items-center mb-2">
+                <button type="button" class="btn btn-outline-secondary no-loader no-print"
+                        onclick="downloadDashboardPDF('dashboardCardDesktop','dashboard_desktop.pdf')">
+                    <i class="fa-solid fa-print"></i> Print / PDF
+                </button>
+            </div>
+            <div class="card py-5 px-3" style="border-width: 5px;" id="dashboardCardDesktop">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="fs-1 fw-semibold" id="pageTitle">Yuktdhara Module - Certification Dashboard</div>
+                        <nav style="--bs-breadcrumb-divider: '>';" class="fs-7" aria-label="breadcrumb">
+                            <div class="breadcrumb text-body-secondary" id="breadcrumb"></div>
+                        </nav>
+                    </div>
+                    <button class="btn btn-light no-loader visually-hidden mb-2" id="backButton" onclick="goBack()">← Back</button>
+                    <div class="row">
+                        {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                        <div class="alert alert-danger text-center" role="alert">
+                            {{ messages[0] }}.
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                        <form action="" method="post" id="register-form-desktop">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <div class="search-container" id="searchContainer" style="display: none;">
+                                <input type="text" class="search-box" id="searchBox" placeholder="Search users..." 
+                                    onkeyup="searchUsers()" autocomplete="off">
+                            </div>
+                            <div class="table-loader" id="tableLoader">
+                                <div class="es-cube-grid">
+                                    <div class="es-cube es-cube1"></div>
+                                    <div class="es-cube es-cube2"></div>
+                                    <div class="es-cube es-cube3"></div>
+                                    <div class="es-cube es-cube4"></div>
+                                    <div class="es-cube es-cube5"></div>
+                                    <div class="es-cube es-cube6"></div>
+                                    <div class="es-cube es-cube7"></div>
+                                    <div class="es-cube es-cube8"></div>
+                                    <div class="es-cube es-cube9"></div>
+                                </div>
+                            </div>
+                            <div id="tableContainer" class="table-responsive">
+                                
+                            </div>
+                             <div class="pagination" id="paginationContainer" style="display: none;"></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{url_for('static',filename='js/html2pdf.bundle.min.js')}}"></script>
+
+<script>
+/* Only new functionality: print / PDF for desktop & mobile cards */
+function downloadDashboardPDF(cardId, filename){
+    const el = document.getElementById(cardId);
+    if(!el) return;
+    // Prefer html2pdf for better fidelity
+    if(window.html2pdf){
+        const opt = {
+            margin: 8,
+            filename: filename || (cardId + '.pdf'),
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(el).save();
+    } else {
+        // Fallback: print whole page (CSS limits to the card)
+        window.print();
+    }
+}
+
+/* ===== Original Dashboard Logic (UNMODIFIED FUNCTIONALITY) ===== */
+let currentLevel = 'states';
+let currentData = {};
+let navigationStack = [];
+let currentPage = 1;
+let currentSearch = '';
+const ENDPOINTS = {
+    states: '/dashboard/states',
+    districts: '/dashboard/districts',
+    blocks: '/dashboard/blocks'
+    // districts: (stateId) => `/api/districts?state_id=${encodeURIComponent(stateId)}`,
+    // blocks: (districtId) => `/api/blocks?district_id=${encodeURIComponent(districtId)}`
+
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadStates();
+});
+
+function loadStates() {
+    showTableLoader(true);
+    currentLevel = 'states';
+    navigationStack = [];
+    updateHeader('Yuktdhara Dashboard - States', '');
+    fetch(ENDPOINTS.states)
+        .then(response => {
+            if(response.ok) return response.json();
+            else throw new Error('Connection test failed');
+        })
+        .then(data => {
+            renderTable(data, 'states');
+            // hideLoader?.();
+            showTableLoader(false);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('tableContainer').innerHTML = '<div class="loading">Error loading data</div>';
+            // hideLoader?.();
+            showTableLoader(false);
+        });
+}
+
+function showTableLoader(show){
+    if (show){
+        document.getElementById('tableContainer').innerHTML='';
+        document.getElementById('tableLoader').classList.add('d-block');
+        document.getElementById('tableLoader').classList.remove('d-none');
+    } else {
+        document.getElementById('tableLoader').classList.add('d-none');
+        document.getElementById('tableLoader').classList.remove('d-block');
+    }
+}
+
+function loadDistricts(stateId, stateName) {
+    showTableLoader(true);
+    currentLevel = 'districts';
+    if (navigationStack.length === 0){
+        navigationStack.push({level: 'states', data: {'name': stateName}});
+    }
+    currentData.stateId = stateId;
+    updateHeader('Yuktdhara Dashboard - Districts', stateName);
+
+    fetch(ENDPOINTS.districts, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state_id: stateId })
+    })
+    .then(response => {
+        if (response.ok) return response.json();
+        else throw new Error('There was an error while loading data!');
+    })
+    .then(data => {
+        renderTable(data, 'districts');
+        // hideLoader?.();
+        showTableLoader(false);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('tableContainer').innerHTML = '<div class="loading">Error loading data</div>';
+        // hideLoader?.();
+        showTableLoader(false);
+    });
+}
+
+function loadBlocks(districtId, districtName, stateId) {
+    showTableLoader(true);
+    currentLevel = 'blocks';
+    navigationStack.push({level: 'districts', data: {stateId: stateId, name:districtName}});
+    currentData.districtId = districtId;
+    currentData.stateId = stateId;
+    updateHeader('Yuktdhara Dashboard - Blocks', districtName);
+
+    fetch(ENDPOINTS.blocks, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            district_id: districtId,
+            state_id: stateId
+        })
+    })
+    .then(response => {
+        if (response.ok) return response.json();
+        else throw new Error('There was an error while loading data!');
+    })
+    .then(data => {
+        renderTable(data, 'blocks');
+        // hideLoader?.();
+        showTableLoader(false);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('tableContainer').innerHTML = '<div class="loading">Error loading data</div>';
+        // hideLoader?.();
+        showTableLoader(false);
+    });
+}
+
+function renderTable(data, level) {
+    let html = '<table class="table table-bordered"><thead><tr class="text-center">';
+    html += '<th>S.No</th>';
+    switch(level) {
+        case 'states':
+            html += '<th>State Name</th><th>User Count</th><th>Action</th>';
+            break;
+        case 'districts':
+            html += '<th>District Name</th><th>User Count</th><th>Action</th>';
+            break;
+        case 'blocks':
+            html += '<th>Block Name</th><th>User Count</th>';
+            break;
+    }
+    html += '</tr></thead><tbody>';
+    let total_count = 0;
+    data.forEach((item, index) => {
+        total_count += parseInt(item.user_count);
+        html += `<tr>
+            <td class="text-center">${index + 1}</td>
+            <td>${item.name}</td>
+            <td class="text-center">${item.user_count}</td>`;
+        if (level != 'blocks'){
+            html += `<td class="text-center">
+                        <div class="btn btn-sm text-primary no-loader"
+                             onclick="handleClick('${level}', ${item.id}, '${item.name}', ${item.state_id || 'null'}, ${item.district_id || 'null'})">
+                             <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        </div>
+                     </td>`;
+        }
+        html += `</tr>`;
+    });
+
+    html += '</tbody>';
+    html += `<tfoot><tr class="text-center"><th colspan="2">Total</th><th>${total_count}</th>`;
+    if (level != 'blocks') html += '<th></th>';
+    html += '</tr></tfoot></table>';
+    document.getElementById('tableContainer').innerHTML = html;
+
+    document.getElementById('searchContainer').style.display = 'none';
+    document.getElementById('paginationContainer').style.display = 'none';
+}
+
+function handleClick(level, id, name, stateId, districtId) {
+    switch(level) {
+        case 'states':
+            loadDistricts(id, name);
+            break;
+        case 'districts':
+            loadBlocks(id, name, stateId);
+            break;
+        case 'blocks':
+            // Reserved for users drilldown if added later
+            break;
+    }
+}
+
+function updateHeader(title, breadcrumb) {
+    document.getElementById('pageTitle').textContent = title;
+    const breadcrumbDiv = document.getElementById('breadcrumb');
+    breadcrumbDiv.innerHTML = '';
+    const root = document.createElement('li');
+    root.className = 'breadcrumb-item';
+    root.textContent = 'INDIA';
+    breadcrumbDiv.appendChild(root);
+    if (navigationStack.length > 0){
+        navigationStack.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'breadcrumb-item';
+            li.textContent = item.data.name;
+            breadcrumbDiv.appendChild(li);
+        });
+    }
+    const backButton = document.getElementById('backButton');
+    if (navigationStack.length > 0) backButton.classList.remove('visually-hidden');
+    else backButton.classList.add('visually-hidden');
+}
+
+function goBack() {
+    if (navigationStack.length === 0) return;
+    const previous = navigationStack.pop();
+    switch(previous.level) {
+        case 'states':
+            loadStates();
+            break;
+        case 'districts':
+            loadDistricts(currentData.stateId, navigationStack[0].data.name); // could be refined to specific state if needed
+            break;
+        case 'blocks':
+            // reserved for later use if required
+            // loadDistricts(previous.data.stateId, previous.data.name);
+            break;
+    }
+}
+
+function searchUsers() {
+    const searchValue = document.getElementById('searchBox').value;
+    // Placeholder - no user-level implementation in original code
+}
+
+function hideLoader() {
+    var loader = document.querySelector('.loader');
+    loader.classList.add('loader-hidden');
+}
+
+function changePage(page) {
+    // Placeholder for future user-level pagination
+}
+
+</script>
+{% endblock %}

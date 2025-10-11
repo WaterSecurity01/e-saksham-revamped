@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %} Certificates {% endblock %}
+{% block content %}
+<div class="container py-5">
+    {% if certificates %}
+    <div class="row g-4">
+        {% for certificate in certificates %}
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card shadow-sm certificate-card h-100">
+                <div class="certificate-card__image">
+                    <img src="{{ url_for('static', filename='assets/sample_cert.png') }}" alt="Certificate sample" class="certificate-card__image--blurred">
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <h5 class="fw-semibold mb-2 text-center text-muted fs-6">{{ certificate.course_name }}</h5>
+                    <div class="mt-auto">
+                        <a class="btn btn-primary w-100" href="{{ url_for('auth.print_certificate', course_id=certificate.course_id) }}">
+                            <i class="fa-solid fa-print me-2"></i>View / Print Certificate
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="d-flex justify-content-center">
+        <div class="card shadow-sm">
+            <div class="row g-0 align-items-center">
+                <div class="col-md-8">
+                    <div class="card-body">
+                        <h3 class="card-title">No Certificates Yet</h3>
+                        <p class="card-text text-muted">You have not been issued any certificates. Complete a course to unlock your certificate.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

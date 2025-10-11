@@ -5,30 +5,11 @@ from app.db import db
 from app.models.role import Role
 from app.models.user import User
 
-
-# class UserInRole(db.Model):
-#     __tablename__ = 'users_in_roles'
-    
-#     id = db.Column(db.Integer, primary_key=True)
-#     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-#     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
-#     created_on = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc))
-#     # assigned_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    
-#     # Relationships
-#     user = db.relationship('User', foreign_keys=[user_id], back_populates='user_roles')
-#     role = db.relationship('Role', back_populates='role_users')
-#     # assigner = db.relationship('User', foreign_keys=[assigned_by])
-    
-#     # Composite unique constraint
-#     __table_args__ = (db.UniqueConstraint('user_id', 'role_id', name='unique_user_role'),)
-
 class UserInRole(db.Model):
     __tablename__ = 'users_in_roles'
     
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False,primary_key=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False, default=2,primary_key=True)
     created_on = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc))
 
     # Relationships
@@ -38,6 +19,11 @@ class UserInRole(db.Model):
     def __repr__(self):
         return f'<UserInRole user_id={self.user_id} role_id={self.role_id}>'
     
+    def __init__(self, user_id, role_id = 2):
+        self.user_id = user_id
+        self.role_id = role_id
+        self.created_on = datetime.now(timezone.utc)
+
     @classmethod
     def get_all(cls):
         query = (
@@ -65,6 +51,10 @@ class UserInRole(db.Model):
         ]
         return output
     
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
     @classmethod
     def get_user_role_by_id(cls, user_id):
         query = (

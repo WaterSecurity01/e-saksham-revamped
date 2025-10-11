@@ -1,14 +1,21 @@
 from datetime import datetime, timezone
 from functools import wraps
+
 from flask import Blueprint, json, jsonify, render_template, request
 
+from app.classes.logging import get_route_loggers, _client_ip
 from app.db import db
 from app.models.activities import Activity
 from app.models.agents import Agent
 from app.models.statements import Statement
 
 
-blp = Blueprint('lrs',__name__, url_prefix='/api/lrs')
+blp = Blueprint('lrs', __name__, url_prefix='/api/lrs')
+
+_loggers = get_route_loggers('lrs')
+access_logger = _loggers.access
+error_logger = _loggers.error
+activity_logger = _loggers.activity
 
 # Authentication decorator for API endpoints
 def require_auth(f):
@@ -16,6 +23,11 @@ def require_auth(f):
     def decorated_function(*args, **kwargs):
         auth = request.authorization
         if not auth or not check_auth(auth.username, auth.password):
+            access_logger.warning(
+                'LRS authentication failed | path=%s | ip=%s',
+                request.path,
+                _client_ip()
+            )
             return jsonify({'error': 'Authentication required'}), 401
         return f(*args, **kwargs)
     return decorated_function
@@ -30,12 +42,27 @@ def get_activity_state():
     state_id = request.args.get("stateId")
     activity_id = request.args.get("activityId")
     agent = request.args.get("agent")  # This will be a JSON string
+    access_logger.info(
+        'LRS activity state request | state_id=%s | activity_id=%s | ip=%s',
+        state_id,
+        activity_id,
+        _client_ip()
+    )
     
     # Optional: Parse agent JSON safely
     try:
         agent_data = json.loads(agent) if agent else {}
-    except Exception as e:
+    except Exception:
+        error_logger.exception('Invalid agent payload for activity state | raw_agent=%s', agent)
         return jsonify({"error": "Invalid agent format"}), 400
+
+    activity_logger.info(
+        'LRS activity state served | state_id=%s | activity_id=%s | agent_present=%s | ip=%s',
+        state_id,
+        activity_id,
+        bool(agent_data),
+        _client_ip()
+    )
 
     return jsonify({
         "stateId": state_id,
@@ -48,12 +75,16 @@ def get_activity_state():
 def post_statement():
     try:
         statement_id = request.args.get("statementId")
-        print(statement_id)
-        print(request.get_json())
+        access_logger.info(
+            'LRS statement received | method=PUT | statement_id=%s | ip=%s | content_type=%s',
+            statement_id,
+            _client_ip(),
+            request.content_type
+        )
         if request.content_type == 'application/json':
-            statement_data = request.get_json()
+            statement_data = request.get_json() or {}
         else:
-            statement_data = json.loads(request.data)
+            statement_data = json.loads(request.data or b'{}')
         
         # # Extract statement components
         actor = statement_data.get('actor', {})
@@ -110,15 +141,24 @@ def post_statement():
                 )
                 agent.save()
                 # db.session.add(agent)
-        
+
         # db.session.commit()
         
         # return jsonify([statement.id]), 200
+        activity_logger.info(
+            'LRS statement stored | statement_id=%s | actor=%s | verb=%s | object=%s | ip=%s',
+            statement_id,
+            actor.get('mbox'),
+            verb.get('id'),
+            obj.get('id'),
+            _client_ip()
+        )
         return jsonify([statement_id]), 200
         
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 400
+        error_logger.exception('Error storing LRS statement | statement_id=%s', request.args.get("statementId"))
+        return jsonify({'error': 'Failed to process statement'}), 400
     
 
 @blp.route('/statements', methods=['GET'])
@@ -132,6 +172,16 @@ def get_statements():
         since = request.args.get('since')
         until = request.args.get('until')
         limit = request.args.get('limit', 100, type=int)
+        access_logger.info(
+            'LRS statements query | agent=%s | verb=%s | activity=%s | since=%s | until=%s | limit=%s | ip=%s',
+            agent_mbox,
+            verb_id,
+            activity_id,
+            since,
+            until,
+            limit,
+            _client_ip()
+        )
         
         query = Statement.query.filter_by(voided=False)
         
@@ -149,36 +199,75 @@ def get_statements():
             query = query.filter(Statement.timestamp <= until_date)
         
         statements = query.order_by(Statement.stored.desc()).limit(limit).all()
+
+        activity_logger.info(
+            'LRS statements returned | count=%d | limit=%s | ip=%s',
+            len(statements),
+            limit,
+            _client_ip()
+        )
         
         return jsonify({
             'statements': [stmt.to_dict() for stmt in statements],
             'more': len(statements) == limit
         }), 200
         
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+    except Exception:
+        error_logger.exception('Error fetching LRS statements')
+        return jsonify({'error': 'Failed to fetch statements'}), 400
 
 @blp.route('/statements/<statement_id>', methods=['GET'])
 @require_auth
 def get_statement(statement_id):
     try:
+        access_logger.info(
+            'LRS statement fetch | statement_id=%s | ip=%s',
+            statement_id,
+            _client_ip()
+        )
         statement = Statement.query.filter_by(id=statement_id, voided=False).first()
         if not statement:
+            activity_logger.warning(
+                'LRS statement not found | statement_id=%s | ip=%s',
+                statement_id,
+                _client_ip()
+            )
             return jsonify({'error': 'Statement not found'}), 404
         
+        activity_logger.info(
+            'LRS statement served | statement_id=%s | ip=%s',
+            statement_id,
+            _client_ip()
+        )
         return jsonify(statement.to_dict()), 200
         
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+    except Exception:
+        error_logger.exception('Error fetching LRS statement | statement_id=%s', statement_id)
+        return jsonify({'error': 'Failed to fetch statement'}), 400
 
 @blp.route('/activities/<path:activity_id>', methods=['GET'])
 @require_auth
 def get_activity(activity_id):
     try:
+        access_logger.info(
+            'LRS activity fetch | activity_id=%s | ip=%s',
+            activity_id,
+            _client_ip()
+        )
         activity = Activity.query.filter_by(id=activity_id).first()
         if not activity:
+            activity_logger.warning(
+                'LRS activity not found | activity_id=%s | ip=%s',
+                activity_id,
+                _client_ip()
+            )
             return jsonify({'error': 'Activity not found'}), 404
         
+        activity_logger.info(
+            'LRS activity served | activity_id=%s | ip=%s',
+            activity_id,
+            _client_ip()
+        )
         return jsonify({
             'id': activity.id,
             'definition': {
@@ -188,11 +277,16 @@ def get_activity(activity_id):
             }
         }), 200
         
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+    except Exception:
+        error_logger.exception('Error fetching LRS activity | activity_id=%s', activity_id)
+        return jsonify({'error': 'Failed to fetch activity'}), 400
 
 @blp.route('/about', methods=['GET'])
 def about():
+    access_logger.info(
+        'LRS about requested | ip=%s',
+        _client_ip()
+    )
     return jsonify({
         'version': ['1.0.3'],
         'extensions': {}

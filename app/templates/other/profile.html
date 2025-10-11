@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card mt-5">
+            <div class="card-header text-center">
+                <h4 class="card-title mb-0"> Update Profile </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                <form id="update_profile" action="{{url_for('auth.update_profile')}}" method="post" novalidate>
+                    {{ form.hidden_tag() }}
+                    <div class="d-grid gap-3">
+                        <div class="form-floating">
+                        {{ form.email(class="form-control-plaintext", placeholder=form.email.label.text, autocomplete="off", placeholder=form.email.label.text) }}
+                        {{ form.email.label(class="form-label") }}
+                        <div class="invalid-feedback">Please provide a valid email.</div>
+                        </div>
+                        <div class="form-floating">
+                        {{ form.full_name(class="form-control", placeholder=form.full_name.label.text) }}
+                        {{ form.full_name.label(class="form-label") }}
+                        <div class="invalid-feedback">Full name is required.</div>
+                        </div>
+                        <div class="form-floating">
+                        {{ form.state(class="form-select text-body-secondary", id="state") }}
+                        {{ form.state.label(class="form-label") }}
+                        <div class="invalid-feedback">Please select a state.</div>
+                        </div>
+                        <div class="form-floating">
+                        {{ form.district(class="form-select text-body-secondary", id="district") }}
+                        {{ form.district.label(class="form-label") }}
+                        <div class="invalid-feedback">Please select a district.</div>
+                        </div>
+                        <div class="form-floating">
+                        {{ form.block(class="form-select text-body-secondary", id="block") }}
+                        {{ form.block.label(class="form-label") }}
+                        <div class="invalid-feedback">Please select a block.</div>
+                        </div>
+                        <div class="d-flex justify-content-center align-items-center gap-2">
+                        <strong><label class="mb-0">Solve: {{captcha_question}} = ?</label></strong>
+                        {{ form.captcha_answer(class="form-control w-auto") }}<br>
+                        <div class="invalid-feedback">Please solve the captcha.</div>
+                        </div>
+                        {{ form.submit(class="btn btn-primary mt-4 init-loader", disabled=True) }}
+                    </div>
+                </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const form = document.getElementById('update_profile');
+    const fullNameInput = document.getElementById('full_name');
+    const stateSelect = document.getElementById('state');
+    const districtSelect = document.getElementById('district');
+    const blockSelect = document.getElementById('block');
+    const submitButton = form ? form.querySelector('button[type="submit"], input[type="submit"]') : null;
+
+    let originalValues = null;
+    let isLoading = true;
+
+    function resetDropdown(selectElement, placeholderText) {
+        selectElement.innerHTML = `<option value="0">${placeholderText}</option>`;
+        selectElement.selectedIndex = 0;
+    }
+
+    function populateDropdown(selectElement, data, placeholderText) {
+        resetDropdown(selectElement, placeholderText);
+        
+        data.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.name.toUpperCase();
+        selectElement.appendChild(option);
+        });
+    }
+
+    function handleFormChange() {
+        // Small delay to ensure DOM updates are complete
+        setTimeout(() => updateSubmitButton(), 0);
+    }
+
+    function hasFormChanged() {
+        const currentValues = captureFormState();
+        
+        // Compare current values with original values
+        for (const key in originalValues) {
+        if (currentValues[key] !== originalValues[key]) {
+            return true;
+        }
+        }
+        
+        return false;
+    }
+
+    function areDropdownsValid() {
+        // Check if district and block are not at default selection (index 0)
+        const districtValid = districtSelect.selectedIndex > 0;
+        const blockValid = blockSelect.selectedIndex > 0;
+        
+        return districtValid && blockValid;
+    }
+
+    function updateSubmitButton() {
+        if (!submitButton) return;
+
+        const formChanged = hasFormChanged();
+        const dropdownsValid = areDropdownsValid();
+        // const formValid = form.checkValidity();
+        
+        // Enable button only if:
+        // 1. Form has changed from original
+        // 2. Dropdowns are valid (not at index 0)
+        // 3. Not currently loading data
+        // 4. Form passes basic validation
+        // const shouldEnable = formChanged && dropdownsValid && !isLoading && formValid;
+        const shouldEnable = formChanged && dropdownsValid && !isLoading;
+
+        
+        submitButton.disabled = !shouldEnable;
+    }
+
+    function captureFormState() {
+        const formData = new FormData(form);
+        const state = {};
+        
+        for (const [key, value] of formData.entries()) {
+        if (key !== 'captcha_answer' && key !== 'submit') {
+            state[key] = value;
+        }
+        }
+        
+        return state;
+    }
+
+    function updateOriginalValues() {
+        originalValues = captureFormState();
+        updateSubmitButton();
+    }
+
+    function showError(msg) {
+        console.error(msg);
+        // Optionally show a user-facing message (e.g., toast)
+        // alert(msg);
+        }
+
+    fullNameInput.addEventListener('keyup', handleInputChange)
+    stateSelect.addEventListener('change', handleStateChange);
+    districtSelect.addEventListener('change', handleDistrictChange);
+    blockSelect.addEventListener('change', handleBlockChange)
+
+    function handleInputChange(event){
+        const full_name = event.target.value;
+        isLoading = false;
+        updateSubmitButton(true);
+    }
+    
+    async function handleStateChange(event) {
+        const stateId = event.target.value;
+
+        // Reset and disable dependent dropdowns
+        resetDropdown(districtSelect, '-- Select District --');
+        resetDropdown(blockSelect, '-- Select block --');
+        if (blockSelect) blockSelect.disabled = true;
+
+        if (stateId === '0' || !stateId) {
+            if (districtSelect) districtSelect.disabled = true;
+            updateSubmitButton(false);
+            return;
+        }
+
+        // Fetch districts
+        updateSubmitButton(true);
+        if (districtSelect) districtSelect.disabled = true;
+
+        try {
+            const response = await fetch(`/api/districts?state_id=${encodeURIComponent(stateId)}`);
+            if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const districts = await response.json();
+            populateDropdown(districtSelect, districts, '-- Select District --');
+            if (districtSelect) districtSelect.disabled = false;
+        } catch (error) {
+            console.error('Error fetching districts:', error);
+            showError('Failed to load districts. Please try again.');
+            if (districtSelect) districtSelect.disabled = false;
+        } finally {
+            updateSubmitButton(false);
+        }
+    }
+
+    async function handleDistrictChange(event) {
+        const districtId = event.target.value;
+        
+        // Reset blocks
+        resetDropdown(blockSelect, '-- Select block --');
+
+        if (districtId === '0' || !districtId) {
+        blockSelect.disabled = true;
+        updateSubmitButton();
+        return;
+        }
+
+        // Fetch blocks
+        isLoading = true;
+        blockSelect.disabled = true;
+        updateSubmitButton();
+
+        try {
+        const response = await fetch(`/api/blocks?district_id=${districtId}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const blocks = await response.json();
+        populateDropdown(blockSelect, blocks, '-- Select block --');
+        blockSelect.disabled = false;
+        
+        } catch (error) {
+            console.error('Error fetching blocks:', error);
+            showError('Failed to load blocks. Please try again.');
+            blockSelect.disabled = false;
+        } finally {
+        isLoading = false;
+        updateSubmitButton();
+        }
+    }
+
+    async function handleBlockChange(event){
+        const blockId = event.target.value;
+        if (blockId === '0' || !blockId) {
+            updateSubmitButton();
+            return;
+        }
+        isLoading = false;
+        updateSubmitButton();
+    }
+
+    document.addEventListener('DOMContentLoaded',()=>{
+        updateOriginalValues();
+    })
+</script>
+{% endblock %}

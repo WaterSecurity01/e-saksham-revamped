@@ -1,0 +1,141 @@
+{%extends 'base.html'%}
+{% block title %}Feedback{%endblock%}
+{%block content%}
+<div class="container-fluid m-0 p-0 bg-white justify-content-center" style="width: 100%; display: flex;">
+    <div class="row py-5 mb-5 justify-content-center" style="width: 50%;">
+        <div class="card p-3">    
+            <div class="container d-grid justify-content-center">
+                <div class="row text-center">
+                    <div class="fw-semibold fs-1">Leave a Message</div>
+                    <p class="text-secondary pt-2">Your email address will not be published. Required fields are marked.</p>
+                </div>
+                <form method="POST" enctype="multipart/form-data" id="feedback-form-dekstop" class="feedback_form" action="{{url_for('routes.feedback')}}">
+                    {{ form.hidden_tag() }}
+                    <div class="d-grid gap-3">
+                    {{ form.name(class="form-control", id="name", placeholder="Name *", disabled=True, value=current_user.name) }} 
+                    {{ form.email(class="form-control", id="email", placeholder="Email *", disabled=True, value=current_user.email) }} 
+                    {{ form.message_type(class="form-select", id="message_type") }}
+                    {{ form.subject(class="form-control", id="subject", placeholder="Subject *") }}
+                    {{ form.message(class="form-control", id="message", placeholder="Message *") }}
+                    <div>
+                        <span class="me-3">How do you rate your experience:</span>
+                        <div class="rating-mobile" role="radiogroup" aria-label="Rating"> 
+                            <input type="radio" id="star5" name="rating" value="5">
+                            <label for="star5" title="5 stars" aria-hidden="true"></label>
+
+                            <input type="radio" id="star4" name="rating" value="4">
+                            <label for="star4" title="4 stars" aria-hidden="true"></label>
+
+                            <input type="radio" id="star3" name="rating" value="3">
+                            <label for="star3" title="3 stars" aria-hidden="true"></label>
+
+                            <input type="radio" id="star2" name="rating" value="2">
+                            <label for="star2" title="2 stars" aria-hidden="true"></label>
+
+                            <input type="radio" id="star1" name="rating" value="1">
+                            <label for="star1" title="1 star" aria-hidden="true"></label>
+                        </div>
+                    </div>
+                    <div class="d-none">
+                        {#<label for="feedback_image" class="form-label">Attach a Picture (Optional)</label>
+                        <div class="file-upload-wrapper">
+                            {{ form.feedback_image(class="file-upload-input", id="feedback_image", accept="image/*", onchange="updateFileName(this, 'file-upload-text')") }}
+                            <div class="file-upload-text">
+                                <i class="fas fa-upload me-2"></i> Choose a file
+                            </div>
+                        </div>
+                        <div class="file-info">
+                            Supported formats: JPG, PNG (Max size: 2MB)
+                        </div>#}
+                    </div>
+                    <div class="d-flex justify-content-center align-items-center gap-2">
+                    <strong><label class="mb-0 me-">Solve: {{ captcha_question }} = ?</label></strong>
+                    {{ form.captcha_answer(class="form-control w-auto") }}
+                    </div>
+                    {{ form.submit(class="btn btn-primary p-3 px-5", style="border-radius: 30px;") }}
+                    </div>
+                </form>    
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}
+{%block script%}
+<script>
+    // Display selected rating value
+    const stars = document.querySelectorAll('.rating input');
+
+    stars.forEach(star => {
+        star.addEventListener('change', function () {
+            const ratingValue = this.value;
+            console.log("Rating selected:", ratingValue);
+            // You can perform further actions with the rating value here
+        });
+    });
+
+    const stars_mobile = document.querySelectorAll('.rating-mobile input');
+
+    stars_mobile.forEach(star => {
+        star.addEventListener('change', function () {
+            const ratingValue = this.value;
+            console.log("Rating selected:", ratingValue);
+            // You can perform further actions with the rating value here
+        });
+    });
+    
+    // Display file name when selected
+    function updateFileName(input, textElementId) {
+        const fileText = document.getElementById(textElementId) || input.nextElementSibling;
+        
+        if (input.files && input.files[0]) {
+            const fileName = input.files[0].name;
+            const fileSize = (input.files[0].size / 1024 / 1024).toFixed(2); // Convert to MB
+            
+            // Check file size
+            if (fileSize > 5) {
+                alert('File size exceeds 5MB limit. Please choose a smaller file.');
+                input.value = '';
+                fileText.innerHTML = '<i class="fas fa-upload me-2"></i> Choose a file';
+                return;
+            }
+            
+            // Check file type
+            const fileType = input.files[0].type;
+            if (!fileType.startsWith('image/')) {
+                alert('Only image files are allowed.');
+                input.value = '';
+                fileText.innerHTML = '<i class="fas fa-upload me-2"></i> Choose a file';
+                return;
+            }
+            
+            fileText.innerHTML = '<i class="fas fa-file me-2"></i> ' + fileName;
+        } else {
+            fileText.innerHTML = '<i class="fas fa-upload me-2"></i> Choose a file';
+        }
+    }
+    
+    // Form validation
+    document.getElementById('feedback-form-dekstop').addEventListener('submit', function(e) {
+        validateForm(e, this);
+    });
+    
+    // document.getElementById('feedback-form-mobile').addEventListener('submit', function(e) {
+    //     validateForm(e, this);
+    // });
+    
+    function validateForm(e, form) {
+        // Check required fields
+        const requiredFields = form.querySelectorAll('[required]');
+        let valid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                valid = false;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+    }
+</script>
+{%endblock%}

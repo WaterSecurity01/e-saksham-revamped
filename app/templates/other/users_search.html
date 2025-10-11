@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+{% block title %} User Certification Status {% endblock %}
+{% block content %}
+<div class="container-fluid m-0 p-0 justify-content-center w-100 d-flex">
+    <div class="w-90 mb-5">
+        <div class="search-container" id="searchContainer">
+            <div id="search-box">
+                <div class="search-logo" id="logo">Search</div>
+                <div class="user-search-controls">
+                    <div class="position-relative flex-grow-1">
+                        <input 
+                            type="text" 
+                            class="form-control search-input" 
+                            id="searchInput" 
+                            placeholder="Search users by name or email (minimum 3 characters)..."
+                            autocomplete="off"
+                        >
+                        <button class="search-btn" id="searchBtn" type="button" disabled>
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="results-section" id="resultsSection">
+            <div class="row">
+                <div class="col-12">
+                    <div class="search-info mt-3" id="searchInfo"></div>
+                </div>
+            </div>
+            
+            <div class="loading" id="loading" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Searching users...</p>
+            </div>
+            
+            <div id="errorMessage"></div>
+            
+            <div id="resultsContainer">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0" id="usersTable" style="display: none;">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Course</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Location</th>
+                                <th class="text-center">Issued On</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="paginationWrapper" class="pagination-info">
+                    <div class="text-muted" id="paginationInfo"></div>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center mb-0" id="pagination"></ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+class UserSearch {
+    constructor() {
+        this.currentPage = 1;
+        this.currentSearch = '';
+        this.totalPages = 0;
+        this.totalUsers = 0;
+        this.isSearched = false;
+
+        this.initializeElements();
+        this.bindEvents();
+        this.updateSearchButtonState();
+    }
+
+    initializeElements() {
+        this.searchContainer = document.getElementById('searchContainer');
+        this.searchInput = document.getElementById('searchInput');
+        this.searchBtn = document.getElementById('searchBtn');
+        this.logo = document.getElementById('logo');
+        this.resultsSection = document.getElementById('resultsSection');
+        this.loading = document.getElementById('loading');
+        this.errorMessage = document.getElementById('errorMessage');
+        this.searchInfo = document.getElementById('searchInfo');
+        this.usersTable = document.getElementById('usersTable');
+        this.usersTableBody = document.getElementById('usersTableBody');
+        this.paginationInfo = document.getElementById('paginationInfo');
+        this.pagination = document.getElementById('pagination');
+        this.courseFilter = null;
+        this.selectedCourseId = null;
+        this.selectedCourseName = '';
+    }
+
+    bindEvents() {
+        this.searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.performSearch();
+        });
+        this.searchBtn.addEventListener('click', () => this.performSearch());
+        this.searchInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim();
+            this.clearResults();
+            this.updateSearchButtonState();
+        });
+
+        // delegate pagination click once
+        this.pagination.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (e.target.closest('a') && !e.target.closest('.disabled')) {
+                const page = parseInt(e.target.closest('a').dataset.page);
+                if (page && page !== this.currentPage) {
+                    this.performSearch(page);
+                }
+            }
+        });
+
+    }
+
+    performSearch(page = 1) {
+        const query = this.searchInput.value.trim();
+        if (query.length < 3) {
+            this.showError('Please enter at least 3 characters to search.');
+            return;
+        }
+        this.selectedCourseName = '';
+        this.currentSearch = query;
+        this.currentPage = page;
+        if (!this.isSearched) this.transformToSearchMode();
+        this.searchUsers();
+    }
+
+    transformToSearchMode() {
+        this.searchContainer.classList.add('searched');
+        this.logo.classList.add('small');
+        this.resultsSection.style.display = 'block';
+        this.isSearched = true;
+    }
+
+    async searchUsers() {
+        this.showLoading(true);
+        this.clearError();
+        try {
+            const params = new URLSearchParams({
+                search: this.currentSearch,
+                page: this.currentPage,
+                per_page: 20
+            });
+            const response = await fetch(`/api/search-users?${params}`);
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || `HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            this.displayResults(data);
+        } catch (error) {
+            this.showError(error.message || 'An error occurred while searching. Please try again.');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    displayResults(data) {
+        this.totalPages = data.total_pages;
+        this.totalUsers = data.total_users;
+        this.updateSearchInfo(data.search_term || this.currentSearch);
+        this.populateTable(data.users);
+        this.updatePagination();
+        this.usersTable.style.display = 'table';
+    }
+
+    updateSearchInfo(searchTerm) {
+        this.searchInfo.innerHTML = `
+            <i class="fas fa-info-circle"></i>
+            Found <strong>${this.totalUsers}</strong> certificate${this.totalUsers !== 1 ? 's' : ''}
+            for "<strong>${this.escapeHtml(searchTerm)}</strong>"
+        `;
+        this.searchInfo.classList.add('active');
+    }
+
+    populateTable(users) {
+        this.usersTableBody.innerHTML = '';
+        if (users.length === 0) {
+            this.usersTableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        <i class="fas fa-search mb-2 fa-2x"></i><br>
+                        No users found matching your search criteria.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        users.forEach(user => {
+            const locationParts = [user.state, user.district, user.block].filter(Boolean);
+            const locationText = locationParts.length ? locationParts.join(' / ') : '—';
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><strong>${this.escapeHtml(user.course_short_name || user.course_name || '')}</strong></td>
+                <td>${this.escapeHtml(user.name)}</td>
+                <td>${this.escapeHtml(user.email)}</td>
+                <td>${this.escapeHtml(locationText)}</td>
+                <td class="text-center">${this.escapeHtml(user.certified_on || '')}</td>
+                <td class="text-center text-success">
+                    <i class="fa-solid fa-circle-check" title="Certified"></i>
+                </td>
+            `;
+            this.usersTableBody.appendChild(row);
+        });
+    }
+
+    updatePagination() {
+        this.paginationInfo.textContent = `Page ${this.currentPage} of ${this.totalPages} (${this.totalUsers} total)`;
+        this.pagination.innerHTML = '';
+        if (this.totalPages <= 1) return;
+
+        const prevLi = `<li class="page-item ${this.currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${this.currentPage - 1}">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+        </li>`;
+        this.pagination.insertAdjacentHTML('beforeend', prevLi);
+
+        const maxPages = 5;
+        let startPage = Math.max(1, this.currentPage - Math.floor(maxPages/2));
+        let endPage = Math.min(this.totalPages, startPage + maxPages - 1);
+        if (endPage - startPage + 1 < maxPages && startPage > 1) {
+            startPage = Math.max(1, endPage - maxPages + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            this.pagination.insertAdjacentHTML('beforeend',
+                `<li class="page-item ${i === this.currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>`);
+        }
+
+        const nextLi = `<li class="page-item ${this.currentPage === this.totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${this.currentPage + 1}">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </li>`;
+        this.pagination.insertAdjacentHTML('beforeend', nextLi);
+    }
+
+    showLoading(show) {
+        this.loading.style.display = show ? 'block' : 'none';
+        this.usersTable.style.display = show ? 'none' : 'table';
+        if (show) {
+            this.searchBtn.disabled = true;
+        } else {
+            this.updateSearchButtonState();
+        }
+    }
+
+    showError(message) {
+        this.errorMessage.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> ${message}</div>`;
+    }
+    clearError() { this.errorMessage.innerHTML = ''; }
+
+    clearResults(forceReset = false) {
+        this.usersTableBody.innerHTML = '';
+        this.errorMessage.innerHTML = '';
+        this.usersTable.style.display = 'none';
+        this.paginationInfo.innerHTML = '';
+        this.pagination.innerHTML = '';
+        this.searchInfo.innerHTML = '';
+        this.searchInfo.classList.remove('active');
+        const hasQuery = !forceReset && this.searchInput && this.searchInput.value.trim().length > 0;
+        if (!hasQuery) {
+            this.searchContainer.classList.remove('searched');
+            if (this.resultsSection) {
+                this.resultsSection.style.display = 'none';
+            }
+        }
+        this.isSearched = false;
+        this.updateSearchButtonState();
+    }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    updateSearchButtonState() {
+        const query = this.searchInput ? this.searchInput.value.trim() : '';
+        const isLoading = this.loading && this.loading.style.display === 'block';
+        this.searchBtn.disabled = isLoading || query.length < 3;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => new UserSearch());
+</script>
+{% endblock %}

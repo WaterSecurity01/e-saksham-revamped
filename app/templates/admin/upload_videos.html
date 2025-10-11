@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% block title %}Upload Videos{% endblock %}
+{% block content %}
+
+
+<div class="container py-5">
+
+    <div class="card shadow-sm video-upload-card mx-auto">
+        <div class="card-body p-4 p-md-5">
+            <form action="{{ url_for('admin.upload_videos') }}" method="POST" class="video-upload-form" novalidate>
+                <div class="row g-4">
+                    <div class="col-12 col-lg-6">
+                        <label for="title" class="form-label fw-semibold">Video Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title" maxlength="128" required
+                               value="{{ form_data.get('title', '') if form_data else '' }}"
+                               placeholder="Enter the video title as it should be displayed">
+                        <div class="form-text">Maximum 128 characters.</div>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label for="length" class="form-label fw-semibold">Video Length <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="length" name="length" maxlength="128" required
+                               value="{{ form_data.get('length', '') if form_data else '' }}"
+                               placeholder="e.g., 06 min, 1h 30min, 45 sec">
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label for="video_category" class="form-label fw-semibold">Video Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="video_category" name="video_category">
+                            <option value="how_to" {% if not form_data or form_data.get('video_category', 'how_to') == 'how_to' %}selected{% endif %}>How-to</option>
+                            <option value="workshop" {% if form_data and form_data.get('video_category') == 'workshop' %}selected{% endif %}>Workshop</option>
+                        </select>
+                        <div class="form-text">Workshop videos will appear in the new workshop section of the gallery.</div>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <div class="form-check mt-4 pt-2">
+                            <input class="form-check-input" type="checkbox" id="is_short" name="is_short" value="true"
+                                   {% if form_data and form_data.get('is_short') == 'true' %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold" for="is_short">Short Video (Reel)</label>
+                        </div>
+                        <div class="form-text">Check if this is a short-form video (YouTube Shorts).</div>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="video_url" class="form-label fw-semibold">YouTube URL <span class="text-danger">*</span></label>
+                        <input type="url" class="form-control" id="video_url" name="video_url" maxlength="512" required
+                               value="{{ form_data.get('video_url', '') if form_data else '' }}"
+                               placeholder="Paste any YouTube URL (regular video, shorts, embed or youtu.be)">
+                        <div class="form-text">
+                            Supported formats: <code>youtube.com/watch?v=</code>, <code>youtube.com/shorts/</code>, <code>youtube.com/embed/</code>, <code>youtu.be/</code>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="embed_url" name="embed_url" value="{{ form_data.get('embed_url', '') if form_data else '' }}">
+
+                    <div class="col-12" id="url-preview" {% if not form_data or not form_data.get('embed_url') %}style="display:none"{% endif %}>
+                        <div class="alert alert-success" role="alert">
+                            <i class="fa-solid fa-check-circle me-2"></i>
+                            <strong>Converted Embed URL:</strong>
+                            <code id="converted-url">{{ form_data.get('embed_url', '') if form_data else '' }}</code>
+                        </div>
+                    </div>
+
+                    <div class="col-12 d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('routes.video_gallery') }}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary" id="submit-btn" disabled>Upload Video</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const videoUrlInput = document.getElementById('video_url');
+    const embedUrlInput = document.getElementById('embed_url');
+    const submitButton = document.getElementById('submit-btn');
+    const preview = document.getElementById('url-preview');
+    const convertedUrl = document.getElementById('converted-url');
+    const isShortCheckbox = document.getElementById('is_short');
+
+    const existingEmbed = embedUrlInput.value.trim();
+    if (existingEmbed) {
+        submitButton.disabled = false;
+        preview.style.display = 'block';
+    }
+
+    const extractVideoId = (url) => {
+        if (!url) return null;
+        const patterns = [
+            /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+            /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+            /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/
+        ];
+        for (const pattern of patterns) {
+            const match = url.match(pattern);
+            if (match) return match[1];
+        }
+        return null;
+    };
+
+    const isShortsUrl = (url) => url.includes('/shorts/');
+
+    const handleUrlChange = () => {
+        const rawUrl = (videoUrlInput.value || '').trim();
+        embedUrlInput.value = '';
+        preview.style.display = 'none';
+        convertedUrl.textContent = '';
+        submitButton.disabled = true;
+        videoUrlInput.classList.remove('is-valid', 'is-invalid');
+
+        if (!rawUrl) return;
+        if (!rawUrl.includes('youtube.com') && !rawUrl.includes('youtu.be')) {
+            videoUrlInput.classList.add('is-invalid');
+            return;
+        }
+
+        const videoId = extractVideoId(rawUrl);
+        if (!videoId) {
+            videoUrlInput.classList.add('is-invalid');
+            return;
+        }
+
+        const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+        embedUrlInput.value = embedUrl;
+        convertedUrl.textContent = embedUrl;
+        preview.style.display = 'block';
+        submitButton.disabled = false;
+        videoUrlInput.classList.add('is-valid');
+
+        if (isShortsUrl(rawUrl)) {
+            isShortCheckbox.checked = true;
+        }
+    };
+
+    videoUrlInput.addEventListener('input', () => {
+        clearTimeout(videoUrlInput._debounce);
+        videoUrlInput._debounce = setTimeout(handleUrlChange, 400);
+    });
+    videoUrlInput.addEventListener('blur', handleUrlChange);
+    videoUrlInput.addEventListener('paste', () => setTimeout(handleUrlChange, 100));
+
+    document.querySelector('.video-upload-form').addEventListener('submit', (event) => {
+        if (submitButton.disabled) {
+            event.preventDefault();
+        }
+    });
+});
+</script>
+
+{% endblock %}

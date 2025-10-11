@@ -23,9 +23,9 @@
     <div id="loading" class="loading">
         <div class="spinner"></div>
         <p>Loading course...</p>
-    </div>
+      </div>
     <div class="ratio ratio-16x9">
-        <iframe src="{{url_for('.serve_scorm_content', course_id=course.id, filename=course.launch_url)}}?{{query_string|safe}}" frameborder="0" class="src"></iframe>
+        <iframe src="{{url_for('.serve_scorm_content', course_id=course.id, filename=course.launch_url)}}?{{query_string}}" frameborder="0" class="src"></iframe>
     </div>  
   </div>
   <script>

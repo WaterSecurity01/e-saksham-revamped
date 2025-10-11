@@ -1,0 +1,847 @@
+{% extends 'base.html' %}
+{% block title %} User Management {% endblock %}
+{%block content%}
+<!-- Desktop Layout -->
+<div class="d-none d-md-block position-relative">
+    <div id="desktopLoading" class="loading-overlay">Loading...</div>
+    <div class="container-fluid m-0 p-0 bg-white justify-content-center" style="width: 100%; display: flex;">
+        <div class="row py-5 mb-5" style="width: 100%;">
+            <div class="card border-0">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="fs-2 fw-semibold">User Management</div>
+                            <div class="text-muted small">
+                                Use filters to refine results. Click column headers to sort.
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="{{url_for('admin.export_users')}}" class="btn btn-success me-2">
+                                <i class="fas fa-file-excel"></i> Export Users
+                            </a>
+                            <a href="{{url_for('admin.add_user')}}" class="btn btn-primary">
+                                <i class="fas fa-user-plus"></i> Add New User
+                            </a>
+                        </div>
+                    </div>
+                    <div class="row mt-4">
+
+                        <!-- Search and Filter -->
+                        <div class="filter-container">
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <div class="input-group">
+                                        <input type="text" id="searchInput" class="form-control"
+                                            placeholder="Search by name or email">
+                                        <button class="btn btn-outline-secondary no-loader" id="searchButton" type="button" title="Search">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary no-loader" id="clearSearchBtn" type="button"
+                                            title="Clear">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <select class="form-select" id="statusFilter">
+                                        <option value="all">All Status</option>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <select class="form-select" id="adminFilter">
+                                        <option value="all">All Users</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="notadmin">Not Admin</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <select class="form-select" id="stateFilter" title="Filter by State">
+                                        <option value="">All States</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <select class="form-select" id="districtFilter" title="Filter by District" disabled>
+                                        <option value="">All Districts</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <select class="form-select" id="blockFilter" title="Filter by Block" disabled>
+                                        <option value="">All Blocks</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <select class="form-select" id="sortBySelect">
+                                        <option value="name">Sort: Name</option>
+                                        <option value="email">Sort: Email</option>
+                                        <option value="registered_on">Sort: Registration Date</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-2" id="activeFilters" style="min-height: 22px;"></div>
+                        </div>
+
+                        <!-- Users Table -->
+                        <div class="table-responsive mt-3">
+                            <table class="table table-hover align-middle" id="usersTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col" style="width:50px">#</th>
+                                        <th scope="col" class="sortable" data-sort="name">Name <span class="sort-icon"
+                                                data-col="name"></span></th>
+                                        <th scope="col" class="sortable" data-sort="email">Email <span class="sort-icon"
+                                                data-col="email"></span></th>
+                                        <th scope="col">State</th>
+                                        <th scope="col">District</th>
+                                        <th scope="col">Block</th>
+                                        <th scope="col" class="sortable" data-sort="registered_on">Registration Date
+                                            <span class="sort-icon" data-col="registered_on"></span></th>
+                                        <th scope="col" style="width:80px;">Active</th>
+                                        <th class="text-center" scope="col" style="width:70px;">Admin</th>
+                                        <th scope="col" style="width:140px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Pagination -->
+                        <nav>
+                            <ul class="pagination justify-content-center mt-3" id="pagination">
+                                <!-- Populated by JS -->
+                            </ul>
+                        </nav>
+                        <div class="text-center small text-muted" id="resultSummaryDesktop"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Layout -->
+<div class="d-sm-block d-md-none position-relative">
+    <div id="mobileLoading" class="loading-overlay">Loading...</div>
+    <div class="container-fluid p-0 bg-white justify-content-center"
+        style="width: 100%; display: flex; margin-top: -2px;">
+        <div class="row py-3 mb-3" style="width: 95%;">
+            <div class="card py-3 px-3 position-relative border-0" style=" overflow: hidden;">
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-12 mb-2 d-flex justify-content-between align-items-center">
+                            <div class="fs-5 fw-semibold">User Management</div>
+                            <div class="dropdown">
+                                <button class="btn btn-primary btn-sm dropdown-toggle no-loader" type="button"
+                                    id="actionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown">
+                                    <li><a class="dropdown-item" href="{{url_for('admin.export_users')}}"><i
+                                                class="fas fa-file-excel me-2"></i> Export Users</a></li>
+                                    <li><a class="dropdown-item" href="{{url_for('admin.add_user')}}"><i
+                                                class="fas fa-user-plus me-2"></i> Add New User</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search + Filters -->
+                    <div class="input-group mb-2">
+                        <input type="text" id="searchInputMobile" class="form-control" placeholder="Search users...">
+                        <button class="btn btn-outline-secondary no-loader" type="button" id="searchButtonMobile" title="Search">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary no-loader" type="button" id="clearSearchMobile" title="Clear">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="mb-2">
+                        <select class="form-select form-select-sm mb-2" id="statusFilterMobile">
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                        <select class="form-select form-select-sm mb-2" id="adminFilterMobile">
+                            <option value="all">All Users</option>
+                            <option value="admin">Admin</option>
+                            <option value="notadmin">Not Admin</option>
+                        </select>
+                        <select class="form-select form-select-sm mb-2" id="stateFilterMobile">
+                            <option value="">All States</option>
+                        </select>
+                        <select class="form-select form-select-sm mb-2" id="districtFilterMobile" disabled>
+                            <option value="">All Districts</option>
+                        </select>
+                        <select class="form-select form-select-sm mb-2" id="blockFilterMobile" disabled>
+                            <option value="">All Blocks</option>
+                        </select>
+                        <select class="form-select form-select-sm" id="sortBySelectMobile">
+                            <option value="name">Sort: Name</option>
+                            <option value="email">Sort: Email</option>
+                            <option value="registered_on">Sort: Registration Date</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-2" id="activeFiltersMobile" style="min-height: 20px;"></div>
+
+                    <div class="list-group" id="usersList"></div>
+                    <nav class="mt-2 mb-0 w-100">
+                        <ul class="pagination justify-content-center mt-3" id="paginationMobile"></ul>
+                    </nav>
+                    <div class="text-center small text-muted" id="resultSummaryMobile"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="deleteUserForm" action="" method="post" style="display: none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
+
+<script>
+    /* ===================== GLOBAL STATE ===================== */
+    let currentPage = 1, totalPages = 1;
+    let perPage = 100;
+    let search = '', status = 'all', admin = 'all', sort_by = 'name', sort_dir = 'asc';
+    let state_id = '', district_id = '', block_id = '';
+    let isDesktop = window.innerWidth >= 768;
+    let loadingCounter = 0;
+
+    /* ===================== UTILS ===================== */
+    function getCsrfToken() {
+        const el = document.querySelector('input[name="csrf_token"]');
+        return el ? el.value : '';
+    }
+
+    // Centralized overlay controller
+    function showLoading(show) {
+        const overlays = [document.getElementById('desktopLoading'), document.getElementById('mobileLoading')];
+        if (show) {
+            loadingCounter++;
+            overlays.forEach(el => { if (el) el.style.display = 'flex'; });
+        } else {
+            loadingCounter = Math.max(0, loadingCounter - 1);
+            if (loadingCounter === 0) overlays.forEach(el => { if (el) el.style.display = 'none'; });
+        }
+    }
+
+    function buildUsersApiUrl(page = 1) {
+        let url = `/api/users?page=${page}&per_page=${perPage}&search=${encodeURIComponent(search)}&status=${status}&admin=${admin}&sort_by=${sort_by}&sort_dir=${sort_dir}`;
+        if (state_id) url += `&state_id=${state_id}`;
+        if (district_id) url += `&district_id=${district_id}`;
+        if (block_id) url += `&block_id=${block_id}`;
+        return url;
+    }
+    function escapeHtml(str = '') {
+        return (str || '').toString().replace(/[&<>"'`=\/]/g, s => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '/': '&#x2F;', '`': '&#x60;', '=': '&#x3D;'
+        }[s]));
+    }
+    function setDisabledSelects({ desktop = true, district = true, block = true } = {}) {
+        if (desktop) {
+            const d = document.getElementById('districtFilter');
+            const b = document.getElementById('blockFilter');
+            if (d) d.disabled = district;
+            if (b) b.disabled = block;
+        } else {
+            const d = document.getElementById('districtFilterMobile');
+            const b = document.getElementById('blockFilterMobile');
+            if (d) d.disabled = district;
+            if (b) b.disabled = block;
+        }
+    }
+
+    /* ===================== FILTER BADGES ===================== */
+    function renderFilterBadges() {
+        const container = document.getElementById(isDesktop ? 'activeFilters' : 'activeFiltersMobile');
+        if (!container) return;
+        let badges = [];
+        if (search) badges.push({ key: 'search', label: `Search: "${search}"` });
+        if (status !== 'all') badges.push({ key: 'status', label: `Status: ${status}` });
+        if (admin !== 'all') badges.push({ key: 'admin', label: `Admin: ${admin === 'admin' ? 'Yes' : 'No'}` });
+        if (state_id) badges.push({ key: 'state', label: `State` });
+        if (district_id) badges.push({ key: 'district', label: `District` });
+        if (block_id) badges.push({ key: 'block', label: `Block` });
+
+        if (!badges.length) { container.innerHTML = ''; return; }
+
+        container.innerHTML = badges.map(b =>
+            `<span class="user-filter-badge" data-filter="${b.key}">
+                ${b.label}
+                <i class="fas fa-times ms-1 text-muted" style="cursor:pointer;"></i>
+             </span>`
+        ).join(' ');
+
+        container.querySelectorAll('.user-filter-badge').forEach(badge => {
+            badge.addEventListener('click', () => {
+                const k = badge.dataset.filter;
+                if (k === 'search') {
+                    search = '';
+                    if (isDesktop) document.getElementById('searchInput').value = '';
+                    else document.getElementById('searchInputMobile').value = '';
+                }
+                if (k === 'status') {
+                    status = 'all';
+                    if (isDesktop) document.getElementById('statusFilter').value = 'all';
+                    else document.getElementById('statusFilterMobile').value = 'all';
+                }
+                if (k === 'admin') {
+                    admin = 'all';
+                    if (isDesktop) document.getElementById('adminFilter').value = 'all';
+                    else document.getElementById('adminFilterMobile').value = 'all';
+                }
+                if (k === 'state') {
+                    state_id = ''; district_id = ''; block_id = '';
+                    (isDesktop ? document.getElementById('stateFilter') : document.getElementById('stateFilterMobile')).value = '';
+                    resetDistrictBlock(isDesktop);
+                    setDisabledSelects({ desktop: isDesktop, district: true, block: true });
+                }
+                if (k === 'district') {
+                    district_id = ''; block_id = '';
+                    resetDistrictBlock(isDesktop);
+                    if (state_id) setDisabledSelects({ desktop: isDesktop, district: false, block: true });
+                    else setDisabledSelects({ desktop: isDesktop, district: true, block: true });
+                }
+                if (k === 'block') {
+                    block_id = '';
+                    (isDesktop ? document.getElementById('blockFilter') : document.getElementById('blockFilterMobile')).value = '';
+                    if (district_id) setDisabledSelects({ desktop: isDesktop, district: false, block: true });
+                    else if (state_id) setDisabledSelects({ desktop: isDesktop, district: false, block: true });
+                    else setDisabledSelects({ desktop: isDesktop, district: true, block: true });
+                }
+                fetchUsers(1);
+            });
+        });
+    }
+
+    /* ===================== LOCATION SELECT HELPERS ===================== */
+    function fetchStates(selectId, selected = "") {
+        showLoading(true);
+        fetch('/api/states')
+            .then(r => r.json())
+            .then(data => {
+                data.sort((a, b) => a.name.localeCompare(b.name));
+                let s = document.getElementById(selectId);
+                if (!s) return;
+                s.innerHTML = `<option value="">All States</option>` + data.map(st => `<option value="${st.id}" ${selected == st.id ? "selected" : ""}>${st.name}</option>`).join('');
+            })
+            .catch(() => {})
+            .finally(() => showLoading(false));
+    }
+    function fetchDistricts(selectId, stateId, selected = "") {
+        showLoading(true);
+        const d = document.getElementById(selectId);
+        if (!d) { showLoading(false); return; }
+        d.innerHTML = `<option value="">All Districts</option>`;
+        if (!stateId) { showLoading(false); return; }
+        fetch('/api/districts?state_id=' + stateId)
+            .then(r => r.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    data.sort((a, b) => a.name.localeCompare(b.name));
+                    d.innerHTML = `<option value="">All Districts</option>` +
+                        data.map(dt => `<option value="${dt.id}" ${selected == dt.id ? "selected" : ""}>${dt.name}</option>`).join('');
+                }
+            })
+            .catch(() => {})
+            .finally(() => showLoading(false));
+    }
+    function fetchBlocks(selectId, districtId, selected = "") {
+        showLoading(true);
+        const b = document.getElementById(selectId);
+        if (!b) { showLoading(false); return; }
+        b.innerHTML = `<option value="">All Blocks</option>`;
+        if (!districtId) { showLoading(false); return; }
+        fetch('/api/blocks?district_id=' + districtId)
+            .then(r => r.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    data.sort((a, b) => a.name.localeCompare(b.name));
+                    b.innerHTML = `<option value="">All Blocks</option>` +
+                        data.map(bl => `<option value="${bl.id}" ${selected == bl.id ? "selected" : ""}>${bl.name}</option>`).join('');
+                }
+            })
+            .catch(() => {})
+            .finally(() => showLoading(false));
+    }
+    function resetDistrictBlock(desktop = true) {
+        if (desktop) {
+            document.getElementById('districtFilter').innerHTML = '<option value="">All Districts</option>';
+            document.getElementById('blockFilter').innerHTML = '<option value="">All Blocks</option>';
+        } else {
+            document.getElementById('districtFilterMobile').innerHTML = '<option value="">All Districts</option>';
+            document.getElementById('blockFilterMobile').innerHTML = '<option value="">All Blocks</option>';
+        }
+    }
+
+    /* ===================== FETCH USERS (Shared) ===================== */
+    function fetchUsers(page = 1) {
+        showLoading(true);
+        const url = buildUsersApiUrl(page);
+        fetch(url)
+            .then(r => {
+                if (!r.ok) throw new Error('Failed to load');
+                return r.json();
+            })
+            .then(data => {
+                if (isDesktop) {
+                    renderUsersTable(data.users, page, data.total_users);
+                    renderSmartPagination('pagination', data.page, data.total_pages, p => fetchUsers(p));
+                    document.getElementById('resultSummaryDesktop').innerText =
+                        `${data.total_users} user(s), page ${data.page} of ${data.total_pages}`;
+                } else {
+                    renderUsersList(data.users, page, data.total_users);
+                    renderSmartPagination('paginationMobile', data.page, data.total_pages, p => fetchUsers(p));
+                    document.getElementById('resultSummaryMobile').innerText =
+                        `${data.total_users} user(s), page ${data.page} of ${data.total_pages}`;
+                }
+                totalPages = data.total_pages;
+                currentPage = page;
+                updateSortIcons();
+                renderFilterBadges();
+            })
+            .catch(err => {
+                alert('Error fetching users: ' + err.message);
+            })
+            .finally(() => showLoading(false));
+    }
+
+    /* ===================== DESKTOP RENDER ===================== */
+    function renderUsersTable(users, page, totalUsers) {
+        const tbody = document.querySelector('#usersTable tbody');
+        tbody.innerHTML = '';
+        users.forEach((u, idx) => {
+            tbody.insertAdjacentHTML('beforeend', `
+        <tr>
+            <td>${(page - 1) * perPage + idx + 1}</td>
+            <td>${escapeHtml(u.name || '')}</td>
+            <td>${escapeHtml(u.email || '')}</td>
+            <td>${escapeHtml(u.state || '')}</td>
+            <td>${escapeHtml(u.district || '')}</td>
+            <td>${escapeHtml(u.block || '')}</td>
+            <td class="timestamp">${escapeHtml(u.registered_on)}</td>
+            <td>
+                <div class="form-check form-switch d-flex justify-content-center m-0">
+                    <input type="checkbox" class="user-form-check-input status-toggle" data-uuid="${u.uuid}" ${u.is_active ? "checked" : ""}>
+                </div>
+            </td>
+            <td class="text-center">
+                <div class="form-check form-switch d-flex justify-content-center m-0">
+                    <input type="checkbox" class="user-form-check-input admin-toggle" data-uuid="${u.uuid}" ${u.is_admin ? "checked" : ""}>
+                </div>
+            </td>
+            <td class="user-actions">
+                <button type="button" class="btn btn-sm btn-warning action-btn reset-password-btn" data-uuid="${u.uuid}" data-email="${escapeHtml(u.email)}" data-name="${escapeHtml(u.name)}" title="Reset Password">
+                    <i class="fas fa-key"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-danger action-btn delete-user-btn" data-uuid="${u.uuid}" data-name="${escapeHtml(u.name)}" data-email="${escapeHtml(u.email)}" title="Delete User">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        </tr>
+        `);
+        });
+        addDesktopActionListeners();
+    }
+    function addDesktopActionListeners() {
+        document.querySelectorAll('.status-toggle').forEach(el => {
+            el.onchange = function () {
+                showLoading(true);
+                fetch(`/api/toggle-user-status/${this.dataset.uuid}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify({ is_active: this.checked })
+                }).then(r => r.json()).then(data => {
+                    if (!data.success) { alert('Failed to update status'); fetchUsers(currentPage); }
+                }).catch(() => alert('Network error updating status')).finally(() => showLoading(false));
+            };
+        });
+        document.querySelectorAll('.admin-toggle').forEach(el => {
+            el.onchange = function () {
+                showLoading(true);
+                fetch(`/api/toggle-admin/${this.dataset.uuid}`, {
+                    method: 'GET',
+                    headers: { 'X-CSRFToken': getCsrfToken() }
+                }).then(r => r.json()).then(data => {
+                    if (!data.success) { alert('Failed to update admin flag'); fetchUsers(currentPage); }
+                }).catch(() => alert('Network error updating admin flag')).finally(() => showLoading(false));
+            };
+        });
+        document.querySelectorAll('.reset-password-btn').forEach(el => {
+            el.onclick = function () {
+                if (confirm('Reset password for ' + this.dataset.name + '?')) {
+                    showLoading(true);
+                    fetch(`/api/reset-password/${this.dataset.uuid}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                        body: JSON.stringify({})
+                    }).then(r => r.json()).then(data => {
+                        alert(data.success ? 'Password reset.' : 'Error resetting password');
+                    }).catch(() => alert('Network error resetting password')).finally(() => showLoading(false));
+                }
+            };
+        });
+        document.querySelectorAll('.delete-user-btn').forEach(el => {
+            el.onclick = function () {
+                if (confirm('Delete user ' + this.dataset.name + '?')) {
+                    showLoading(true);
+                    fetch(`/api/delete-user/${this.dataset.uuid}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() }
+                    }).then(r => r.json()).then(data => {
+                        alert(data.success ? 'Deleted.' : 'Error deleting user');
+                        fetchUsers(currentPage);
+                    }).catch(() => alert('Network error deleting user')).finally(() => showLoading(false));
+                }
+            };
+        });
+    }
+
+    /* ===================== MOBILE RENDER ===================== */
+    function renderUsersList(users, page, totalUsers) {
+        const list = document.getElementById('usersList');
+        list.innerHTML = '';
+        users.forEach((u, idx) => {
+            list.insertAdjacentHTML('beforeend', `
+        <div class="list-group-item list-group-item-action user-row-mobile mobile-list-item"
+             data-name="${escapeHtml(u.name)}" 
+             data-email="${escapeHtml(u.email)}" 
+             data-uuid="${u.uuid}">
+            <div class="d-flex w-100 justify-content-between mobile-item-header">
+                <h6 class="mb-1">${escapeHtml(u.name)}</h6>
+                <span>
+                    ${u.is_admin ? '<i class="fas fa-crown text-warning ms-1" title="Admin"></i>' : ''}
+                </span>
+            </div>
+            <div class="mobile-item-content">
+                <p class="mb-1">${escapeHtml(u.email)}</p>
+                <small>State: ${escapeHtml(u.state || '')} | District: ${escapeHtml(u.district || '')} | Block: ${escapeHtml(u.block || '')}</small><br>
+                <small>Registered: ${escapeHtml(u.registered_on)}</small>
+            </div>
+            <div class="mobile-item-footer">
+                <div class="d-flex align-items-center gap-4 flex-wrap small">
+                    <label class="d-inline-flex align-items-center m-0">
+                        <span class="me-1">Active:</span>
+                        <input
+                            type="checkbox"
+                            class="user-form-check-input status-toggle-mobile ms-1"
+                            id="status-${u.uuid}"
+                            data-user-uuid="${u.uuid}"
+                            ${u.is_active ? "checked" : ""}>
+                    </label>
+                    <label class="d-inline-flex align-items-center m-0">
+                        <span class="me-1">Admin:</span>
+                        <input
+                            type="checkbox"
+                            class="user-form-check-input admin-toggle-mobile ms-1"
+                            id="admin-${u.uuid}"
+                            data-user-uuid="${u.uuid}"
+                            ${u.is_admin ? "checked" : ""}>
+                    </label>
+                </div>
+                <div class="d-flex align-items-center ms-auto">
+                    <button type="button" class="btn btn-sm btn-warning mobile-action-btn reset-password-btn-mobile"
+                        data-user-uuid="${u.uuid}" data-user-email="${escapeHtml(u.email)}" data-user-name="${escapeHtml(u.name)}" title="Reset Password">
+                        <i class="fas fa-key"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger mobile-action-btn delete-user-btn-mobile ms-1"
+                        data-user-uuid="${u.uuid}" data-user-name="${escapeHtml(u.name)}" data-user-email="${escapeHtml(u.email)}" title="Delete User">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        `);
+        });
+        addMobileActionListeners();
+    }
+    function addMobileActionListeners() {
+        document.querySelectorAll('.status-toggle-mobile').forEach(el => {
+            el.onchange = function () {
+                showLoading(true);
+                fetch(`/api/toggle-user-status/${this.dataset.userUuid}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify({ is_active: this.checked })
+                }).then(r => r.json()).then(data => {
+                    if (!data.success) { alert('Failed to update status'); fetchUsers(currentPage); }
+                }).catch(() => alert('Network error updating status')).finally(() => showLoading(false));
+            };
+        });
+        document.querySelectorAll('.admin-toggle-mobile').forEach(el => {
+            el.onchange = function () {
+                showLoading(true);
+                fetch(`/api/toggle-admin/${this.dataset.userUuid}`, {
+                    method: 'GET',
+                    headers: { 'X-CSRFToken': getCsrfToken() }
+                }).then(r => r.json()).then(data => {
+                    if (!data.success) { alert('Failed to update admin flag'); fetchUsers(currentPage); }
+                }).catch(() => alert('Network error updating admin flag')).finally(() => showLoading(false));
+            };
+        });
+        document.querySelectorAll('.reset-password-btn-mobile').forEach(el => {
+            el.onclick = function () {
+                if (confirm('Reset password for ' + this.dataset.userName + '?')) {
+                    showLoading(true);
+                    fetch(`/api/reset-password/${this.dataset.userUuid}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                        body: JSON.stringify({})
+                    }).then(r => r.json()).then(data => {
+                        alert(data.success ? 'Password reset.' : 'Error resetting password');
+                    }).catch(() => alert('Network error resetting password')).finally(() => showLoading(false));
+                }
+            };
+        });
+        document.querySelectorAll('.delete-user-btn-mobile').forEach(el => {
+            el.onclick = function () {
+                if (confirm('Delete user ' + this.dataset.userName + '?')) {
+                    showLoading(true);
+                    fetch(`/api/delete-user/${this.dataset.userUuid}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() }
+                    }).then(r => r.json()).then(data => {
+                        alert(data.success ? 'Deleted.' : 'Error deleting user');
+                        fetchUsers(currentPage);
+                    }).catch(() => alert('Network error deleting user')).finally(() => showLoading(false));
+                }
+            };
+        });
+    }
+
+    /* ===================== PAGINATION ===================== */
+    function renderSmartPagination(paginationId, page, total, fetchFn) {
+        const pagination = document.getElementById(paginationId);
+        if (!pagination) return;
+        pagination.innerHTML = '';
+        if (total <= 1) return;
+
+        function createItem(label, targetPage, disabled = false, active = false, title = '') {
+            let li = document.createElement('li');
+            li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+            li.innerHTML = `<a class="page-link" href="#" ${title ? `title="${title}"` : ''}>${label}</a>`;
+            if (!disabled && !active) {
+                li.onclick = function (e) {
+                    e.preventDefault();
+                    fetchFn(targetPage);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                };
+            }
+            return li;
+        }
+        pagination.appendChild(createItem('«', 1, page === 1, false, 'First'));
+        pagination.appendChild(createItem('‹', page - 1, page === 1, false, 'Previous'));
+
+        let start = Math.max(1, page - 3), end = Math.min(total, page + 3);
+        if (start > 1) {
+            pagination.appendChild(createItem('1', 1, false, page === 1));
+            if (start > 2) {
+                let sep = document.createElement('li');
+                sep.className = 'page-item disabled';
+                sep.innerHTML = '<a class="page-link" href="#">...</a>';
+                pagination.appendChild(sep);
+            }
+        }
+        for (let i = start; i <= end; i++) {
+            pagination.appendChild(createItem(i, i, false, i === page));
+        }
+        if (end < total) {
+            if (end < total - 1) {
+                let sep = document.createElement('li');
+                sep.className = 'page-item disabled';
+                sep.innerHTML = '<a class="page-link" href="#">...</a>';
+                pagination.appendChild(sep);
+            }
+            pagination.appendChild(createItem(total, total, false, page === total));
+        }
+
+        pagination.appendChild(createItem('›', page + 1, page === total, false, 'Next'));
+        pagination.appendChild(createItem('»', total, page === total, false, 'Last'));
+    }
+
+    /* ===================== SORT ICONS ===================== */
+    function updateSortIcons() {
+        document.querySelectorAll('.sort-icon').forEach(icon => {
+            icon.innerHTML = '';
+            const col = icon.getAttribute('data-col');
+            if (col === sort_by) {
+                icon.innerHTML = sort_dir === 'asc' ? '▲' : '▼';
+            }
+        });
+    }
+
+    /* ===================== EVENT BINDINGS (DESKTOP) ===================== */
+    function bindDesktopEvents() {
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchButton');
+        const clearBtn = document.getElementById('clearSearchBtn');
+
+        if (searchBtn) {
+            searchBtn.onclick = () => {
+                search = searchInput.value.trim();
+                fetchUsers(1);
+            };
+        }
+        if (searchInput) {
+            searchInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    if (searchBtn) searchBtn.click();
+                }
+            });
+        }
+        if (clearBtn) {
+            clearBtn.onclick = () => {
+                if (searchInput.value) {
+                    searchInput.value = '';
+                    search = '';
+                    fetchUsers(1);
+                }
+            };
+        }
+
+        document.getElementById('statusFilter').onchange = function () { status = this.value; fetchUsers(1); };
+        document.getElementById('adminFilter').onchange = function () { admin = this.value; fetchUsers(1); };
+
+        document.getElementById('stateFilter').onchange = function () {
+            state_id = this.value;
+            district_id = ''; block_id = '';
+            resetDistrictBlock(true);
+            if (state_id) {
+                setDisabledSelects({ desktop: true, district: false, block: true });
+                fetchDistricts('districtFilter', state_id);
+            } else {
+                setDisabledSelects({ desktop: true, district: true, block: true });
+            }
+            fetchUsers(1);
+        };
+        document.getElementById('districtFilter').onchange = function () {
+            district_id = this.value;
+            block_id = '';
+            document.getElementById('blockFilter').innerHTML = '<option value="">All Blocks</option>';
+            if (district_id) {
+                setDisabledSelects({ desktop: true, district: false, block: false });
+                fetchBlocks('blockFilter', district_id);
+            } else {
+                setDisabledSelects({ desktop: true, district: false, block: true });
+            }
+            fetchUsers(1);
+        };
+        document.getElementById('blockFilter').onchange = function () {
+            block_id = this.value;
+            fetchUsers(1);
+        };
+
+        document.getElementById('sortBySelect').onchange = function () {
+            sort_by = this.value;
+            sort_dir = 'asc';
+            fetchUsers(1);
+        };
+        document.querySelectorAll('.sortable').forEach(header => {
+            header.addEventListener('click', function () {
+                const col = this.dataset.sort;
+                if (sort_by === col) {
+                    sort_dir = (sort_dir === 'asc') ? 'desc' : 'asc';
+                } else {
+                    sort_by = col;
+                    sort_dir = 'asc';
+                }
+                fetchUsers(1);
+            });
+        });
+    }
+
+    /* ===================== EVENT BINDINGS (MOBILE) ===================== */
+    function bindMobileEvents() {
+        const searchInputMobile = document.getElementById('searchInputMobile');
+        const searchBtnMobile = document.getElementById('searchButtonMobile');
+        const clearSearchMobile = document.getElementById('clearSearchMobile');
+
+        if (searchBtnMobile) {
+            searchBtnMobile.onclick = function () {
+                search = searchInputMobile.value.trim();
+                fetchUsers(1);
+            };
+        }
+        if (searchInputMobile) {
+            searchInputMobile.onkeyup = function (e) {
+                if (e.key === 'Enter') {
+                    if (searchBtnMobile) searchBtnMobile.click();
+                }
+            };
+        }
+        if (clearSearchMobile) {
+            clearSearchMobile.onclick = function () {
+                if (searchInputMobile.value) {
+                    searchInputMobile.value = '';
+                    search = '';
+                    fetchUsers(1);
+                }
+            };
+        }
+        document.getElementById('statusFilterMobile').onchange = function () { status = this.value; fetchUsers(1); };
+        document.getElementById('adminFilterMobile').onchange = function () { admin = this.value; fetchUsers(1); };
+
+        document.getElementById('stateFilterMobile').onchange = function () {
+            state_id = this.value;
+            district_id = ''; block_id = '';
+            resetDistrictBlock(false);
+            if (state_id) {
+                setDisabledSelects({ desktop: false, district: false, block: true });
+                fetchDistricts('districtFilterMobile', state_id);
+            } else {
+                setDisabledSelects({ desktop: false, district: true, block: true });
+            }
+            fetchUsers(1);
+        };
+        document.getElementById('districtFilterMobile').onchange = function () {
+            district_id = this.value;
+            block_id = '';
+            document.getElementById('blockFilterMobile').innerHTML = '<option value="">All Blocks</option>';
+            if (district_id) {
+                setDisabledSelects({ desktop: false, district: false, block: false });
+                fetchBlocks('blockFilterMobile', district_id);
+            } else {
+                setDisabledSelects({ desktop: false, district: false, block: true });
+            }
+            fetchUsers(1);
+        };
+        document.getElementById('blockFilterMobile').onchange = function () {
+            block_id = this.value;
+            fetchUsers(1);
+        };
+
+        document.getElementById('sortBySelectMobile').onchange = function () {
+            sort_by = this.value;
+            sort_dir = 'asc';
+            fetchUsers(1);
+        };
+    }
+
+    /* ===================== INITIAL LOAD ===================== */
+    document.addEventListener('DOMContentLoaded', function () {
+        isDesktop = window.innerWidth >= 768;
+
+        setDisabledSelects({ desktop: true, district: true, block: true });
+        setDisabledSelects({ desktop: false, district: true, block: true });
+
+        fetchStates('stateFilter');
+        fetchStates('stateFilterMobile');
+
+        bindDesktopEvents();
+        bindMobileEvents();
+
+        fetchUsers(1);
+
+        window.addEventListener('resize', () => {
+            const nowDesktop = window.innerWidth >= 768;
+            if (nowDesktop !== isDesktop) {
+                isDesktop = nowDesktop;
+                fetchUsers(currentPage);
+            }
+        });
+    });
+</script>
+{%endblock%}
