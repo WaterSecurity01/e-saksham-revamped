@@ -122,3 +122,37 @@ function hideLoader() {
     var loader = document.querySelector('.loader');
     loader.classList.add('loader-hidden');
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const hide = () => hideLoader();
+    const show = () => showLoader();
+
+    window.addEventListener('pageshow', hide);
+    window.addEventListener('load', hide);
+    window.addEventListener('beforeunload', show);
+
+    document.addEventListener('submit', (event) => {
+        if (event.defaultPrevented) return;
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        show();
+    });
+
+    document.addEventListener('click', (event) => {
+        if (event.defaultPrevented || event.button !== 0) return;
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        const anchor = target.closest('a[href]');
+        if (!anchor) return;
+        if (anchor.hasAttribute('download')) return;
+        if (anchor.target && anchor.target !== '_self') return;
+        // Only handle same-origin navigations
+        try {
+            const url = new URL(anchor.href, window.location.href);
+            if (url.origin !== window.location.origin) return;
+        } catch (err) {
+            return;
+        }
+        show();
+    });
+});

@@ -406,10 +406,18 @@
 
 
     // ---------- Init ----------
-    document.addEventListener('DOMContentLoaded', ()=>{
+    const initRegister = () => {
         loadStates();
-        fetchPublicKey();
-    });
+        if (typeof fetchPublicKey === 'function') {
+            fetchPublicKey();
+        }
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initRegister, { once: true });
+    } else {
+        initRegister();
+    }
 
     })();
 </script>

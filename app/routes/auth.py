@@ -35,7 +35,7 @@ def login():
     )
     # Already logged in → redirect
     if current_user.is_authenticated:
-        return redirect(url_for('routes.courses'))
+        return redirect(url_for('routes.index'))
     form = LoginForm()
     if form.validate_on_submit():
         email = form.username.data.strip().lower()
