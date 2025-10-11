@@ -186,18 +186,23 @@
                 <span class="badge bg-dark" id="permissible-works-count">{{permissible_works|length}}</span>
             </div>
         </div>
-        <div class="card-body d-flex flex-column">
-            <div class="overflow-auto flex-fill scrollable-body">
+        <div class="card-body overflow-scroll max-h-350">
+            
                 <div class="d-grid gap-2" id="permissible-works-container">
                 {% for item in permissible_works %}
-                    <div class="radio-row">
                         <input type="radio" class="btn-check" name="permissible_works" id="btn-permissible_works-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="permissible_works" data-label="{{item.name | capitalize}}">
-                        <label class="btn btn-outline-dark btn-sm full-width-label btn-text-scroll" for="btn-permissible_works-{{item.id}}">{{ item.name | capitalize}}</label>
-                    </div>
+                        <label class="btn btn-outline-dark btn-sm text-start overflow-x-auto text-nowrap thin-scrollbar" for="btn-permissible_works-{{item.id}}">{{ item.name | capitalize}}</label>
                 {% endfor %}
                 </div>
-            </div>
         </div>
+        {#<!-- <div class="card-body overflow-scroll max-h-350">
+            <div class="d-grid gap-2">
+            {% for item in permissible_works %}
+                <input type="checkbox" class="btn-check" id="btn{{item}}{{loop.index}}" autocomplete="off">
+                <label class="btn btn-outline-dark btn-sm text-start overflow-x-auto text-nowrap thin-scrollbar" for="btn{{item}}{{loop.index}}">{{ item | capitalize}}</label>
+            {% endfor %}
+            </div>
+        </div> -->#}
     </div>
     <div class="card border border-2 border-primary mx-2 d-flex flex-column yuktdhara-card" id="yuktdhara-card">
         <div class="card-header text-center bg-primary text-white">Yuktdhara Dropdown Selections</div>

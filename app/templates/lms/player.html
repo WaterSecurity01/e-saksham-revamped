@@ -10,12 +10,12 @@
   <!--Scripts-->
   <script src="{{url_for('static', filename='js/bootstrap.min.js')}}"></script>
   <script src="{{url_for('static', filename='js/jsencrypt.min.js')}}"></script>
-  <title>Course Title</title>
+  <title>{{ course.name }}</title>
 </head>
 <body>
   <nav class="navbar bg-body-tertiary">
     <div class="container-fluid">
-      <a class="navbar-brand mr-auto" href="#">Navbar</a>
+      <a class="navbar-brand mr-auto" href="/course/{{ course.id }}">{{ course.name }}</a>
       <button type="button" class="btn-close ml-auto btn-danger" aria-label="Close" onclick="window.close()"></button>
     </div>
   </nav>
