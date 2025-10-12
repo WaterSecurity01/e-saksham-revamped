@@ -1,6 +1,6 @@
-requirements.txt
 .gitignore
 scorm_packages 
+requirements.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

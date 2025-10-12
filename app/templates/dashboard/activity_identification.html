@@ -10,7 +10,7 @@
             type="text" 
             class="search-input" 
             id="permissible-search" 
-            placeholder="Search Permissible Work / Work Type / Major Scheduled Category..."
+            placeholder="Search Permissible Work..."
             autocomplete="off"
         >
         <button class="search-btn" id="permissible-search-btn" type="button" disabled>
@@ -126,16 +126,12 @@
                 <span class="badge bg-dark" id="land-types-count">{{land_types|length}}</span>
             </div>
         </div>
-        <div class="card-body d-flex flex-column">
-            <div class="overflow-auto flex-fill scrollable-body">
-                <div class="d-grid gap-2" id="land-types-container">
-                {% for item in land_types %}
-                <div class="radio-row">
-                    <input type="checkbox" class="btn-check" name="location_specifics" id="btn-location_specifics-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="location_specifics" data-label="{{item.name | capitalize}}">
-                    <label class="btn btn-outline-dark btn-sm full-width-label btn-text-scroll" for="btn-location_specifics-{{item.id}}">{{ item.name | capitalize}}</label>
-                </div>
-                {% endfor %}
-                </div>
+        <div class="card-body overflow-scroll max-h-350">
+            <div class="d-grid gap-2" id="land-types-container">
+            {% for item in land_types %}
+                <input type="checkbox" class="btn-check" name="location_specifics" id="btn-location_specifics-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="location_specifics" data-label="{{item.name | capitalize}}">
+                <label class="btn btn-outline-dark btn-sm text-start overflow-x-auto text-nowrap thin-scrollbar" for="btn-location_specifics-{{item.id}}">{{ item.name | capitalize}}</label>
+            {% endfor %}
             </div>
         </div>
     </div>   
@@ -146,16 +142,12 @@
                 <span class="badge bg-dark" id="major-scheduled-count">{{major_scheduled_category|length}}</span>
             </div>
         </div>
-        <div class="card-body d-flex flex-column">
-            <div class="overflow-auto flex-fill scrollable-body">
-                <div class="d-grid gap-2" id="major-scheduled-container">
-                {% for item in major_scheduled_category %}
-                <div class="radio-row">
-                    <input type="radio" class="btn-check" name="major_scheduled_category" id="btn-major_scheduled_category-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="major_scheduled_category" data-label="{{item.name | capitalize}}">
-                    <label class="btn btn-outline-dark btn-sm full-width-label btn-text-scroll" for="btn-major_scheduled_category-{{item.id}}">{{ item.name | capitalize}}</label>
-                </div>
-                {% endfor %}
-                </div>
+        <div class="card-body overflow-scroll max-h-350">
+            <div class="d-grid gap-2" id="major-scheduled-container">
+            {% for item in major_scheduled_category %}
+                <input type="radio" class="btn-check" name="major_scheduled_category" id="btn-major_scheduled_category-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="major_scheduled_category" data-label="{{item.name | capitalize}}">
+                <label class="btn btn-outline-dark btn-sm text-start overflow-x-auto text-nowrap thin-scrollbar" for="btn-major_scheduled_category-{{item.id}}">{{ item.name | capitalize}}</label>
+            {% endfor %}
             </div>
         </div>
     </div>
@@ -166,16 +158,12 @@
                 <span class="badge bg-dark" id="work-types-count">{{work_types|length}}</span>
             </div>
         </div>
-        <div class="card-body d-flex flex-column">
-            <div class="overflow-auto flex-fill scrollable-body">
-                <div class="d-grid gap-2" id="work-types-container">
-                {% for item in work_types %}
-                <div class="radio-row">
-                    <input type="radio" class="btn-check" name="work_types" id="btn-work_types-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="work_types" data-label="{{item.name | capitalize}}">
-                    <label class="btn btn-outline-dark btn-sm full-width-label btn-text-scroll" for="btn-work_types-{{item.id}}">{{ item.name | capitalize}}</label>
-                </div>
-                {% endfor %}
-                </div>
+        <div class="card-body overflow-scroll max-h-350">
+            <div class="d-grid gap-2" id="work-types-container">
+            {% for item in work_types %}
+                <input type="radio" class="btn-check" name="work_types" id="btn-work_types-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="work_types" data-label="{{item.name | capitalize}}">
+                <label class="btn btn-outline-dark btn-sm text-start overflow-x-auto text-nowrap thin-scrollbar" for="btn-work_types-{{item.id}}">{{ item.name | capitalize}}</label>
+            {% endfor %}
             </div>
         </div>
     </div>
@@ -186,8 +174,7 @@
                 <span class="badge bg-dark" id="permissible-works-count">{{permissible_works|length}}</span>
             </div>
         </div>
-        <div class="card-body overflow-scroll max-h-350">
-            
+        <div class="card-body overflow-scroll max-h-350">            
                 <div class="d-grid gap-2" id="permissible-works-container">
                 {% for item in permissible_works %}
                         <input type="radio" class="btn-check" name="permissible_works" id="btn-permissible_works-{{item.id}}" autocomplete="off" value="{{item.id}}" data-id="{{item.id}}" data-group="permissible_works" data-label="{{item.name | capitalize}}">
@@ -568,27 +555,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const label = document.createElement('label');
             label.className = isStacked
-                ? 'btn btn-outline-dark btn-sm full-width-label'
-                : 'btn btn-outline-dark btn-sm text-center';
+                ? 'btn btn-outline-dark btn-sm text-start overflow-x-auto text-nowrap thin-scrollbar'
+                : 'btn btn-outline-dark btn-sm text-start overflow-x-auto text-nowrap thin-scrollbar';
             label.setAttribute('for', inputId);
             label.textContent = labelValue;
 
-            label.classList.add('btn-text-scroll');
+            // label.classList.add('btn-text-scroll');
 
             if (isDisabled && !isLocked) {
                 label.classList.add('btn-disabled');
             }
-
-            if (isStacked) {
-                const row = document.createElement('div');
-                row.className = 'radio-row';
-                row.appendChild(input);
-                row.appendChild(label);
-                container.appendChild(row);
-            } else {
-                container.appendChild(input);
-                container.appendChild(label);
-            }
+            container.appendChild(input);
+            container.appendChild(label);
+            // if (isStacked) {
+            //     const row = document.createElement('div');
+            //     row.className = 'radio-row';
+            //     row.appendChild(input);
+            //     row.appendChild(label);
+            //     container.appendChild(row);
+            // } else {
+            //     container.appendChild(input);
+            //     container.appendChild(label);
+            // }
         });
 
         const newSelectionKeys = new Set();

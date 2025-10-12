@@ -4,7 +4,7 @@ from typing import List
 from flask import Blueprint, json, jsonify, render_template, request
 from flask_login import login_required
 
-from app.classes.helper import _build_enriched_options, orm_to_dict_list
+from app.classes.helper import orm_to_dict_list
 from app.classes.logging import get_route_loggers , _client_ip
 from app.models.user import User
 from app.models.user_courses import UserCourse

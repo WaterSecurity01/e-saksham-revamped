@@ -103,13 +103,11 @@ def create_db(app):
         
         return True
     
-
 def generate_rsa_key_pair():
     key = RSA.generate(2048)
     public_key_pem = key.publickey().export_key().decode('utf-8')
     private_key_pem = key.export_key().decode('utf-8')
     return public_key_pem, private_key_pem
-
 
 def decrypt_password(encrypted_password):
     try:
@@ -143,7 +141,6 @@ def decrypt_password(encrypted_password):
         return {'error': 'Password Decryption failed'}
     
 # Generate a math question and store answer
-
 def generate_math_captcha():
     a, b = random.randint(1, 9), random.randint(1, 9)
     operators = [('+', lambda x, y: x + y), ('-', lambda x, y: x - y)]
@@ -157,7 +154,6 @@ def generate_math_captcha():
     answer = op_func(a, b)
     session['captcha_answer'] = str(answer)
     return question
-
 
 def format_slxapi_query_string(actor: dict, endpoint: str, auth: str) -> str:
     """
@@ -252,7 +248,6 @@ def get_lrs_query_string(learner, base_url):
     except Exception as e:
         return None
     
-
 # Function to convert number to a string with seven digits
 def convert_to_seven_digits(number):
     return f"{number:07d}"
@@ -272,8 +267,6 @@ def get_or_create_visit_count():
         # error_logger.error(f"Failed to read/initialize visit count: {ex}")
         return 0
     
-
-
 def extract_youtube_video_id_from_any_url(url):
     """
     Extract video ID from any YouTube URL format
@@ -385,11 +378,9 @@ def validate_any_youtube_url(url):
     video_id = extract_youtube_video_id_from_any_url(url)
     return video_id is not None
 
-
 def orm_to_dict_list(queryset, fields):
     """Convert ORM objects into list of dicts with only required fields."""
     return [{f: getattr(obj, f) for f in fields} for obj in queryset]
-
 
 def _build_enriched_options(model, fields, enabled_ids):
     """Return ordered option dictionaries including disabled flags for search results."""
