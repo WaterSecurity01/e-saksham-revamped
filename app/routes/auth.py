@@ -182,19 +182,19 @@ def certificates():
     access_logger.info('Route accessed | action=auth.certificates | user_id=%s | ip=%s', current_user.id, _client_ip())
 
     certificates = UserCourse.get_user_certificates(current_user.id)
-    certificates = [{"course_name":"Participatory Rural Planning Using Yuktdhara",
-                    "course_description":"An engaging introduction to Yuktdhara—India’s geospatial platform for MGNREGA asset planning at the Gram Panchayat level with integrated satellite data and mapping tools.",
-                    "course_id":1},
-                    {"course_name":"युक्तधारा पोर्टल के माध्यम से पारदर्शी ग्रामीण योजना",
-                     "course_description":"युक्तधारा वीडियो में युक्त धारा पोर्टल की कार्यप्रणाली और विशेषताएं सरल व प्रभावी तरीके से प्रस्तुत की गई हैं, जो ग्रामीण Panchayat स्तर पर MGNREGA की योजना निर्माण को GIS आधारित बहुआयामी दृष्टिकोण प्रदान करती है।",
-                     "course_id":2},
-                    {"course_name":"The Rural Employment Framework",
-                     "course_description":"A structured guide to rights, responsibilities, and planning under Mahatma Gandhi National Rural Employment Guarantee Act.",
-                    "course_id":3},
-                    {"course_name":"Introduction to Geospatial Mapping and Scientific Planning",
-                     "course_description":"Unlock the power of geospatial tools—learn to use base maps, Bhuvan, and WMS for smart MGNREGA asset planning.",
-                     "course_id":4}
-                    ]
+    # certificates = [{"course_name":"Participatory Rural Planning Using Yuktdhara",
+    #                 "course_description":"An engaging introduction to Yuktdhara—India’s geospatial platform for MGNREGA asset planning at the Gram Panchayat level with integrated satellite data and mapping tools.",
+    #                 "course_id":1},
+    #                 {"course_name":"युक्तधारा पोर्टल के माध्यम से पारदर्शी ग्रामीण योजना",
+    #                  "course_description":"युक्तधारा वीडियो में युक्त धारा पोर्टल की कार्यप्रणाली और विशेषताएं सरल व प्रभावी तरीके से प्रस्तुत की गई हैं, जो ग्रामीण Panchayat स्तर पर MGNREGA की योजना निर्माण को GIS आधारित बहुआयामी दृष्टिकोण प्रदान करती है।",
+    #                  "course_id":2},
+    #                 {"course_name":"The Rural Employment Framework",
+    #                  "course_description":"A structured guide to rights, responsibilities, and planning under Mahatma Gandhi National Rural Employment Guarantee Act.",
+    #                 "course_id":3},
+    #                 {"course_name":"Introduction to Geospatial Mapping and Scientific Planning",
+    #                  "course_description":"Unlock the power of geospatial tools—learn to use base maps, Bhuvan, and WMS for smart MGNREGA asset planning.",
+    #                  "course_id":4}
+    #                 ]
     return render_template('auth/certificates.html', certificates=certificates)
 
 

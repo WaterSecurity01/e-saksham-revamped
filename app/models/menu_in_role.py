@@ -33,7 +33,7 @@ class MenuInRole(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
     menu_id = db.Column(db.Integer, db.ForeignKey('menu_items.id'), nullable=False)
-    created_on = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc))
+    created_on = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
     # Relationships
     role = db.relationship('Role', back_populates='role_menus')

@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+
+from sqlalchemy import func
 from app.db import db
 
 
@@ -9,9 +11,9 @@ class Activity(db.Model):
     name = db.Column(db.String(255))
     description = db.Column(db.Text)
     type = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, server_default=func.now())
 
     def save(self):
         db.session.add(self)
-        db.session.commit
+        db.session.commit()
         return

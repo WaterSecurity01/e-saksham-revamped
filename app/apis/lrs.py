@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from functools import wraps
+from zoneinfo import ZoneInfo
 
 from flask import Blueprint, json, jsonify, render_template, request
 
@@ -109,7 +110,7 @@ def post_statement():
             result_score_scaled=result.get('score', {}).get('scaled') if result.get('score') else None,
             context_instructor=context.get('instructor'),
             context_team=context.get('team'),
-            timestamp=datetime.fromisoformat(statement_data.get('timestamp').replace('Z', '+00:00')) if statement_data.get('timestamp') else datetime.now(timezone.utc),
+            timestamp=datetime.fromisoformat(statement_data.get('timestamp').replace('Z', '+00:00')) if statement_data.get('timestamp') else lambda: datetime.now(tz=ZoneInfo("Asia/Kolkata")),
             authority=request.authorization.username if request.authorization else None,
             raw_statement=json.dumps(statement_data)
         )

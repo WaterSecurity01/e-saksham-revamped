@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from app.db import db
 
 # class MenuItem(db.Model):
@@ -38,7 +39,7 @@ class MenuItem(db.Model):
     menu_roles = db.relationship('MenuInRole', back_populates='menu', cascade="all, delete-orphan")
 
 
-    def __init__(self, name, url, icon, parent_id, order_index, is_active=True, created_at = datetime.now(timezone.utc)):
+    def __init__(self, name, url, icon, parent_id, order_index, is_active=True, created_at = lambda: datetime.now(tz=ZoneInfo("Asia/Kolkata"))):
         self.name = name
         self.url = url
         self.icon = icon

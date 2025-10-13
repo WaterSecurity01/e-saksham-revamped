@@ -1,0 +1,6 @@
+id,name,description,is_active
+5,sysadmin,Developer role having access to hidden pages as well,t
+2,user,Basic Role for everyone,t
+1,anonymous,Guest visitors,t
+3,admin,Admin role for State Coordinators,t
+4,superadmin,Admin Role for Ministry,t

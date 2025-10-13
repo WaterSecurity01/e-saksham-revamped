@@ -2,7 +2,7 @@ import os
 from time import perf_counter
 
 from dotenv import load_dotenv
-from flask import Flask, g, jsonify, request, url_for
+from flask import Flask, abort, g, jsonify, request, url_for
 from flask_login import LoginManager, current_user
 from flask_migrate import Migrate
 from flask_wtf import CSRFProtect
@@ -86,6 +86,13 @@ def create_app():
     def _log_request_started():
         """Record request start time for duration logging."""
         g.request_started_at = perf_counter()
+        # if not 'static' in request.path:
+        #     try:
+        #         if not request.headers.environ['HTTP_REFERER']:
+        #             pass
+        #     except KeyError:
+        #         abort(403)
+        
 
     @app.after_request
     def _log_request_complete(response):
@@ -112,6 +119,31 @@ def create_app():
             # Avoid interfering with response cycle if logging fails
             pass
         return response
+    
+    @app.after_request
+    def set_security_headers(response):
+        try:
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            response.headers["X-Frame-Options"] = "SAMEORIGIN"
+            response.headers["X-XSS-Protection"] = "1; mode=block"
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains;"
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://www.youtube.com https://www.google.com https://www.gstatic.com https://static.doubleclick.net https://cdn.jsdelivr.net https://kit.fontawesome.com https://code.jquery.com https://cdnjs.cloudflare.com; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://kit.fontawesome.com; "
+                "font-src 'self' https://fonts.gstatic.com https://ka-f.fontawesome.com; "
+                "img-src 'self' data: https://i.ytimg.com https://s.ytimg.com; "
+                "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.google.com/ https://training.wasca.in; "
+                "object-src 'none'; "
+                "connect-src 'self' https://ka-f.fontawesome.com https://www.google.com; "
+            )
+            return response
+        except Exception as ex:
+            
+            return response
 
     @app.teardown_request
     def _log_request_teardown(exc):
@@ -143,11 +175,12 @@ def create_app():
             # Find the current active menu item based on the request path
             active_menu_item = None
             for menu in all_accessible_menus:
-                # Check if the menu's URL exactly matches the request path or starts with it
-                # Consider more robust URL matching if your menu URLs are not direct routes
-                if request.path == menu.url or (menu.url != '/' and request.path.startswith(menu.url + '/')):
-                    active_menu_item = menu
-                    break
+                if menu.url:
+                    # Check if the menu's URL exactly matches the request path or starts with it
+                    # Consider more robust URL matching if your menu URLs are not direct routes
+                    if request.path == menu.url or (menu.url != '/' and request.path.startswith(menu.url + '/')):
+                        active_menu_item = menu
+                        break
             return active_menu_item
         
         def get_breadcrumbs(active_menu_item=None):
@@ -170,10 +203,11 @@ def create_app():
                 
                 breadcrumbs = temp_breadcrumbs
             else:
+                breadcrumbs = [{'url': url_for('routes.index'), 'name': 'Home'}]
                 # Fallback for pages not directly linked to a menu item (e.g., admin login, error pages)
                 # You could define specific titles/subtitles for these
                 if request.endpoint: # If a Flask endpoint exists
-                    page_title = request.endpoint.replace('_', ' ').title()
+                    page_title = request.endpoint.split('.')[-1].replace('_', ' ').title()
                     page_subtitle = f"Viewing {page_title}"
                     breadcrumbs.append({'url': request.path, 'name': page_title})
             return page_title, breadcrumbs

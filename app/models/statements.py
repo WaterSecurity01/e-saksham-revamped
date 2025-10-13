@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 import uuid
+from zoneinfo import ZoneInfo
 
 from flask import json
 from app.db import db
@@ -23,8 +24,8 @@ class Statement(db.Model):
     result_score_scaled = db.Column(db.Float)
     context_instructor = db.Column(db.String(255))
     context_team = db.Column(db.String(255))
-    timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    stored = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(tz=ZoneInfo("Asia/Kolkata")))
+    stored = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(tz=ZoneInfo("Asia/Kolkata")))
     authority = db.Column(db.String(255))
     version = db.Column(db.String(10), default='1.0.3')
     voided = db.Column(db.Boolean, default=False)

@@ -1,5 +1,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
+
+from sqlalchemy import func
 from app.db import db
 
 
@@ -10,7 +12,7 @@ class Enrollment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=False)
     enrolled_at = db.Column(
-        db.DateTime, default=lambda: datetime.now(tz=ZoneInfo("Asia/Kolkata"))
+        db.DateTime, server_default=func.now()
     )
 
     # Relationships

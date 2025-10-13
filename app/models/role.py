@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from app.db import db
 
 # class Role(db.Model):
@@ -28,11 +29,10 @@ class Role(db.Model):
     role_menus = db.relationship('MenuInRole', back_populates='role', cascade="all, delete-orphan")
 
 
-    def __init__(self, name, description, is_active=True, created_at=datetime.now(timezone.utc)):
+    def __init__(self, name, description, is_active=True):
         self.name = name
         self.description = description
         self.is_active = is_active
-        self.created_at = self.created_at
 
     @classmethod
     def get_role_by_name(cls, role_name):

@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+
+from sqlalchemy import func
 from app.db import db
 
 
@@ -8,7 +10,7 @@ class Agent(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     mbox = db.Column(db.String(255), unique=True)
     name = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, server_default=func.now())
 
     def save(self):
         db.session.add(self)

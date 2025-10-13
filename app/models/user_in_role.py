@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import func
 from app.db import db
@@ -10,7 +11,7 @@ class UserInRole(db.Model):
     
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False,primary_key=True)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False, default=2,primary_key=True)
-    created_on = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc))
+    created_on = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(tz=ZoneInfo("Asia/Kolkata")))
 
     # Relationships
     user = db.relationship("User", back_populates="user_roles")
@@ -22,7 +23,7 @@ class UserInRole(db.Model):
     def __init__(self, user_id, role_id = 2):
         self.user_id = user_id
         self.role_id = role_id
-        self.created_on = datetime.now(timezone.utc)
+        self.created_on = datetime.now(tz=ZoneInfo("Asia/Kolkata"))
 
     @classmethod
     def get_all(cls):
