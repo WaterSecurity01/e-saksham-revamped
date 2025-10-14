@@ -1,7 +1,5 @@
 .gitignore
-scorm_packages 
-requirements.txt
-
+.DS_Store
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -14,6 +12,7 @@ migrations/
 
 # Distribution / packaging
 .Python
+logs/
 build/
 develop-eggs/
 dist/

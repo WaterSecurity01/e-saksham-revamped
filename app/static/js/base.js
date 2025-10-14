@@ -10,6 +10,20 @@ function resetSelect(sel, placeholder, disabled = true) {
         sel.disabled = !!disabled;
     }
 
+function togglePassword(id) {
+    const pwd = document.getElementById(id);
+    const icon = document.getElementById("togglePasswordIcon");
+    if (pwd.type === "password") {
+        pwd.type = "text";
+        icon.classList.remove("fa-eye");
+        icon.classList.add("fa-eye-slash");
+    } else {
+        pwd.type = "password";
+        icon.classList.remove("fa-eye-slash");
+        icon.classList.add("fa-eye");
+    }
+}
+
 // ---------- Loaders ----------
 async function loadStates() {
     resetSelect($state, '— Loading States… —', true);
@@ -155,4 +169,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         show();
     });
+    document.querySelectorAll("input[type='password']").forEach(function(pwdField) {
+        // Find the toggle button inside the same parent wrapper
+        const toggleBtn = pwdField.parentElement.querySelector("a");
+        if (!toggleBtn) return; // skip if no toggle button
+
+        // Initial check
+        if (pwdField.value.length === 0) {
+            toggleBtn.classList.add("d-none");
+        }
+
+        // Show/hide button on input
+        pwdField.addEventListener("input", function() {
+            if (pwdField.value.length > 0) {
+                toggleBtn.classList.remove("d-none");
+            } else {
+                toggleBtn.classList.add("d-none");
+                // Reset icon and type
+                const icon = toggleBtn.querySelector("i");
+                if (icon) {
+                    icon.classList.remove("fa-eye-slash");
+                    icon.classList.add("fa-eye");
+                }
+                pwdField.type = "password";
+            }
+        });
+    });
+
 });

@@ -32,6 +32,10 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            <!-- Show/Hide button -->
+                            <a class="position-absolute top-50 end-0 translate-middle-y me-2" onclick="togglePassword('password')">
+                                <i class="fa-solid fa-eye text-secondary" id="togglePasswordIcon"></i>
+                            </a>
                         </div>                    
                         <div class="form-check">
                             {{ form.remember_me(class="form-check-input") }}

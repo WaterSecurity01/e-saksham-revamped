@@ -43,7 +43,6 @@ def login():
         try:
             password = decrypt_password(form.password.data or "")
             captcha_response = request.form.get('captcha_answer','').strip()
-
             expected_captcha = session.get('captcha_answer')
             if not expected_captcha or captcha_response != expected_captcha:
                 activity_logger.warning('Login captcha failed | email=%s | ip=%s', email, _client_ip())
@@ -83,24 +82,38 @@ def register():
     if request.method == "POST":
         try:            
             full_name=request.form.get('full_name')
-            email=request.form.get('email')
+            email=request.form.get('email').strip().lower()
             password=decrypt_password(request.form.get('password'))
             state_id=request.form.get('state')
             district_id=request.form.get('district')
             block_id=request.form.get('block')
+            user_duplicate_check = User.get_user_by_email(email)
+            if user_duplicate_check:
+                activity_logger.warning('Registration attempt with existing email | email=%s | ip=%s', email, _client_ip())
+                flash(message="Email already registered. Please login or use a different email.", category="error")
+                return redirect(url_for('auth.register'))
             user = User(name=full_name, 
                         email=email,
                         password=pbkdf2_sha256.hash(password), 
-                        state_id=state_id, 
-                        district_id=None if district_id == -1 else district_id,
-                        block_id=None if block_id == -1 else block_id)
-            # user.save()
+                        state_id=int(state_id), 
+                        district_id=None if int(district_id) == -1 else int(district_id),
+                        block_id=None if int(block_id) == -1 else int(block_id))
+            user.save()
+            # give normal user role 
+            user_registered = User.get_user_by_email(email)
+            
+            if user_registered is None:
+                error_logger.error('User registration failed | reason=user_not_found_post_create | email=%s', email)
+                flash(message="There was a problem in registering. Please try again.", category="error")
+                return redirect(url_for('auth.register'))
+            user_in_role = UserInRole(user_id=user_registered.id, role_id=2) # default role as 'user'
+            user_in_role.save()
             activity_logger.info('Registration submission | email=%s | ip=%s', email, _client_ip())
-            flash(message=f"Registered Successfully. Please login with your crendentials", category="success")
+            flash(message=f"Registered Successfully. Please login with your credentials", category="success")
             return redirect(url_for('auth.login'))
         except Exception as ex:
             error_logger.exception('Error during registration | email=%s', request.form.get('email'))
-            flash(message=f"There was a problem in registering. Error: {ex}", category="error")
+            flash(message=f"There was a problem in registering", category="error")
             return redirect(url_for('auth.register'))
     captcha_question = generate_math_captcha()    
     return render_template('auth/register.html', form=form, captcha_question=captcha_question)

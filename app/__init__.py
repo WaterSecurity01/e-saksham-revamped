@@ -34,13 +34,14 @@ def create_app():
     os.makedirs(app.config['SCORM_FOLDER'], exist_ok=True)
 
     # DB Config
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL','postgresql://db_master:w24JyTn0SIEHfS@144.24.103.183:5432/isaksham_db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL','postgresql://postgres:postgres@10.247.147.177:5432/e_saksham')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['PROPAGATE_EXCEPTIONS'] = False
     app.config['WTF_CSRF_ENABLED'] = False
-    public_key_pem, private_key_pem = generate_rsa_key_pair()
-    app.config['PUBLIC_KEY'] = public_key_pem
-    app.config['PRIVATE_KEY'] = private_key_pem
+    # public_key_pem, private_key_pem = generate_rsa_key_pair()
+
+    # app.config['PUBLIC_KEY'] = public_key_pem
+    # app.config['PRIVATE_KEY'] = private_key_pem
 
     # Initialize
     db.init_app(app)
@@ -51,6 +52,8 @@ def create_app():
 
     app_loggers = get_route_loggers('app')
     app_loggers.activity.info('Application instance initialised')
+    # app_loggers.activity.info(f"private key in inint.py:{app.config.get('PRIVATE_KEY')},{public_key_pem}")
+
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -131,14 +134,14 @@ def create_app():
             response.headers["X-XSS-Protection"] = "1; mode=block"
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains;"
             response.headers["Content-Security-Policy"] = (
-                "default-src 'self'; "
-                "script-src 'self' 'unsafe-inline' https://www.youtube.com https://www.google.com https://www.gstatic.com https://static.doubleclick.net https://cdn.jsdelivr.net https://kit.fontawesome.com https://code.jquery.com https://cdnjs.cloudflare.com; "
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://kit.fontawesome.com; "
-                "font-src 'self' https://fonts.gstatic.com https://ka-f.fontawesome.com; "
-                "img-src 'self' data: https://i.ytimg.com https://s.ytimg.com; "
-                "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.google.com/ https://training.wasca.in; "
-                "object-src 'none'; "
-                "connect-src 'self' https://ka-f.fontawesome.com https://www.google.com; "
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://www.youtube.com https://www.google.com https://www.gstatic.com https://static.doubleclick.net https://cdn.jsdelivr.net https://kit.fontawesome.com https://code.jquery.com https://cdnjs.cloudflare.com; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://kit.fontawesome.com; "
+            "font-src 'self' data: https://fonts.gstatic.com https://ka-f.fontawesome.com; "
+            "img-src 'self' data: https://i.ytimg.com https://s.ytimg.com; "
+            "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.google.com/ https://training.wasca.in; "
+            "object-src 'none'; "
+            "connect-src 'self' https://ka-f.fontawesome.com https://www.google.com; "
             )
             return response
         except Exception as ex:

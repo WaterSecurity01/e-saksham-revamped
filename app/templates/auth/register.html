@@ -37,6 +37,10 @@
                         <div class="form-floating">
                         {{ form.password(class="form-control form-size", placeholder="Password", autocomplete="off", placeholder=form.password.label.text) }}
                         {{ form.password.label(class="form-label") }}
+                        <!-- Show/Hide button -->
+                            <a class="position-absolute top-50 end-0 translate-middle-y me-2" onclick="togglePassword('password')">
+                                <i class="fa-solid fa-eye text-secondary" id="togglePasswordIcon"></i>
+                            </a>
                         <div class="invalid-feedback">Password must meet the required format.</div>
                         </div>
                         <div class="text-center fs-8 text-body-secondary" name="passwordHelp">
@@ -46,6 +50,10 @@
                         <div class="form-floating">
                         {{ form.confirm_password(class="form-control form-size", placeholder="Confirm Password", autocomplete="off", placeholder=form.confirm_password.label.text) }}
                         {{ form.confirm_password.label(class="form-label") }}
+                        <!-- Show/Hide button -->
+                            <a class="position-absolute top-50 end-0 translate-middle-y me-2" onclick="togglePassword('password')">
+                                <i class="fa-solid fa-eye text-secondary" id="togglePasswordIcon"></i>
+                            </a>
                         <div class="invalid-feedback">Passwords must match.</div>
                         </div>
                         <div class="d-flex justify-content-center align-items-center gap-2">
