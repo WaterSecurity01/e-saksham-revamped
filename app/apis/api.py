@@ -10,7 +10,7 @@ from app.classes.helper import _build_enriched_options, admin_required, orm_to_d
 from app.classes.logging import get_route_loggers, _client_ip
 from app.models import Block, Course, District, State_UT, UserCourse, User
 from passlib.hash import pbkdf2_sha256
-
+from app.classes.helper import generate_rsa_key_pair
 from app.models.activity_dashboard import (
     db,
     ActivityList,
@@ -125,12 +125,17 @@ def decrypt_keys():
         _client_ip()
     )
     try:
-        public_key = current_app.config.get('PUBLIC_KEY')
-        if not public_key:
+        # public_key = current_app.config.get('PUBLIC_KEY')
+        # private_key = current_app.config.get('PRIVATE_KEY')
+        public_key_pem, private_key_pem = generate_rsa_key_pair()
+        session['PUBLIC_KEY'] = public_key_pem
+        session['PRIVATE_KEY'] = private_key_pem
+        error_logger.error(f"Private key :{private_key_pem},Public key :{public_key_pem}")
+        if not public_key_pem:
             activity_logger.warning('Public key missing in configuration | ip=%s', _client_ip())
             return jsonify({'error': 'Public key not configured'}), 500
         activity_logger.info('Public key served | ip=%s', _client_ip())
-        return jsonify({'publicKey': public_key}), 200
+        return jsonify({'publicKey': public_key_pem}), 200
     except Exception:
         error_logger.exception('Error retrieving public key')
         return jsonify({'error': 'Unable to retrieve public key'}), 500

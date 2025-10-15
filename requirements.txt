@@ -9,8 +9,7 @@ waitress==2.1.2
 psycopg2-binary==2.9.9
 flask_login==0.6.3
 Flask-Migrate==4.0.5
-Flask-Caching==2.3.0
-requests==2.3.0
+requests==2.31.0
 flask-session==0.8.0
 flask-mail
 gunicorn

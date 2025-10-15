@@ -43,6 +43,8 @@ def login():
         try:
             password = decrypt_password(form.password.data or "")
             captcha_response = request.form.get('captcha_answer','').strip()
+            error_logger.error(f"passwordfromform:{request.form.get('password')}")
+            error_logger.error(password)
             expected_captcha = session.get('captcha_answer')
             if not expected_captcha or captcha_response != expected_captcha:
                 activity_logger.warning('Login captcha failed | email=%s | ip=%s', email, _client_ip())
@@ -84,6 +86,8 @@ def register():
             full_name=request.form.get('full_name')
             email=request.form.get('email').strip().lower()
             password=decrypt_password(request.form.get('password'))
+            error_logger.error(f"passwordfromform:{request.form.get('password')}")
+            error_logger.error(password)
             state_id=request.form.get('state')
             district_id=request.form.get('district')
             block_id=request.form.get('block')

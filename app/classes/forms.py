@@ -8,7 +8,7 @@ from app.models.menu_item import MenuItem
 
 
 class LoginForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired(), Length(min=4, max=25)])
+    username = StringField('Username', validators=[DataRequired(), Length(min=4, max=120)])
     password = PasswordField('Password', validators=[DataRequired()])
     remember_me = BooleanField('Remember Me')
     captcha_answer = StringField(

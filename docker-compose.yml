@@ -13,6 +13,10 @@ services:
     restart: always
     networks:
       - backend
+    volumes:
+      - .:/workspace  # mount your source code for code-server too
+      - ./app/static/scorm_packages:/app/static/scorm_packages
+      - ./app/migrations:/app/migrations
 
   redis:
     image: redis:7
@@ -41,7 +45,67 @@ services:
     networks:
       - backend
 
+  code-server:
+    image: codercom/code-server:latest
+    user: root
+    container_name: code_server
+    environment:
+      - PASSWORD=Developer123@
+      - TZ=Asia/Kolkata
+    volumes:
+      - .:/home/coder/project                   # your code
+      - /var/run/docker.sock:/var/run/docker.sock   # allow Docker access
+      - /usr/bin/docker:/usr/bin/docker             # map docker binary
+    expose:
+      - "8080"
+    restart: always
+    networks:
+      - backend
 
+  log-cleaner:
+    image: alpine:latest
+    container_name: log_cleaner
+    user: root
+    environment:
+      - TZ=Asia/Kolkata
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers
+      - ./log-cleaner:/var/log
+      - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
+      - /etc/localtime:/etc/localtime:ro
+    command: >
+      sh -c "while true;
+            do
+              echo '[log-cleaner] Cleaning logs at '$$(date) >> /var/log/log-cleaner.log;
+              echo '[BEFORE CLEAN]' >> /var/log/log-cleaner.log;
+              du -ch /var/lib/docker/containers/*/*-json.log 2>/dev/null | grep total >> /var/log/log-cleaner.log || true;
+              find /var/lib/docker/containers/ -name '*-json.log' -exec truncate -s 0 {} \;;
+              echo '[AFTER CLEAN]' >> /var/log/log-cleaner.log;
+              du -ch /var/lib/docker/containers/*/*-json.log 2>/dev/null | grep total >> /var/log/log-cleaner.log || true;
+              echo '[log-cleaner] Finished at '$$(date) >> /var/log/log-cleaner.log;
+              echo '---------------------------------------------' >> /var/log/log-cleaner.log;
+              sleep 43200;
+            done"
+    restart: always
+    networks:
+      - backend
+
+  nginx:
+    image: nginx:stable
+    container_name: nginx_reverse_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/certs:/etc/nginx/certs
+    depends_on:
+      - web
+      - pgadmin
+      - code-server
+    restart: always
+    networks:
+      - backend
 
 networks:
   backend:

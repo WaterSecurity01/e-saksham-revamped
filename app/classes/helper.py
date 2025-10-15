@@ -19,6 +19,11 @@ from Crypto.Cipher import PKCS1_v1_5
 
 from app.models.visit_count import VisitCount
 
+_loggers = get_route_loggers('helper')
+access_logger = _loggers.access
+error_logger = _loggers.error
+activity_logger = _loggers.activity
+
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -107,11 +112,13 @@ def generate_rsa_key_pair():
     key = RSA.generate(2048)
     public_key_pem = key.publickey().export_key().decode('utf-8')
     private_key_pem = key.export_key().decode('utf-8')
+
     return public_key_pem, private_key_pem
 
 def decrypt_password(encrypted_password):
     try:
-        private_key_pem = current_app.config.get('PRIVATE_KEY')
+        # private_key_pem = current_app.config.get('PRIVATE_KEY')
+        private_key_pem = session.get('PRIVATE_KEY')
         if not private_key_pem:
             # error_logger.error("Private key not found in session.")
             return {'error': 'Private key missing for decryption'}
@@ -125,9 +132,10 @@ def decrypt_password(encrypted_password):
         sentinel = get_random_bytes(15)            
         decrypted_bytes = cipher_rsa.decrypt(encrypted_bytes, sentinel)
 
+        activity_logger.warning(f"Encrypted_bytes:{encrypted_bytes},Sentinel: {sentinel}, Decrypted bytes: {decrypted_bytes}")
         if decrypted_bytes == sentinel:
             # error_logger.error("RSA decryption failed (likely wrong key or corrupted ciphertext)")
-            return {'error': 'Private key missing for decryption'}
+            return {'error': 'RSA decryption failed (likely wrong key or corrupted ciphertext)'}
         try:
             cleartext_password = decrypted_bytes.decode('utf-8')
         except UnicodeDecodeError:
