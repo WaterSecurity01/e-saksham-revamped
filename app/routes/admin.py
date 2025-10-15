@@ -27,8 +27,8 @@ from app.models.menu_in_role import MenuInRole
 from app.models.menu_item import MenuItem
 from app.models.role import Role
 from app.models.user import User
-from app.models.user_courses import UserCourse
 from app.models.user_in_role import UserInRole
+from app.services.menu_cache import refresh_menu_cache
 from passlib.hash import pbkdf2_sha256
 
 from app.models.videos import Video
@@ -60,6 +60,7 @@ def roles():
             if not role:
                 new_role = Role(name=form.name.data, description=form.description.data)
                 new_role.save()
+                refresh_menu_cache()
                 activity_logger.info('Role created | name=%s | ip=%s', form.name.data, _client_ip())
                 flash("Role added successfully!", "success")
                 return redirect(url_for("admin.roles"))
@@ -93,6 +94,7 @@ def menu_items():
             if not menuItem:
                 new_menuItem = MenuItem(form.name.data,form.url.data,form.icon.data,form.parent_id.data,form.order_index.data)
                 new_menuItem.save()
+                refresh_menu_cache()
                 activity_logger.info('Menu item created | name=%s | ip=%s', form.name.data, _client_ip())
                 flash("Menu item added successfully!", "success")
                 return redirect(url_for("admin.menu_items"))

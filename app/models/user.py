@@ -7,6 +7,7 @@ import uuid
 import logging
 
 from app.db import db
+from app.services import menu_cache
 
 # Import centralized loggers
 
@@ -90,150 +91,30 @@ class User(UserMixin, db.Model):
         Return a hierarchical list of active menu items available to this user through roles.
         Filters for active menus and structures them into a parent-child tree.
         """
-        from sqlalchemy.orm import joinedload
-        from app.models import MenuItem, MenuInRole, Role, UserInRole
-        # Load all active menu items associated with the user's roles
-        # Use aliased for self-referential joins to avoid ambiguity
-        # MenuItemAlias = aliased(MenuItem)
-
-        all_user_menus_flat = (
-            db.session.query(MenuItem)
-            .join(MenuInRole)
-            .join(Role)
-            .join(UserInRole)
-            .filter(
-                UserInRole.user_id == self.id,
-                MenuItem.is_active == True,
-                Role.is_active == True # Ensure roles themselves are active
-            )
-            .options(joinedload(MenuItem.parent), joinedload(MenuItem.children)) # Eager load parents and children
-            .order_by(MenuItem.order_index)
-            .all()
+        menu_cache.ensure_menu_cache()
+        role_ids = menu_cache.get_role_ids_for_user(
+            self.id,
+            email=self.email,
+            is_admin=self.is_admin,
         )
-
-        # Build a dictionary for quick lookup by ID
-        menu_dict = {menu.id: menu for menu in all_user_menus_flat}
-
-        # Structure the menus hierarchically
-        # Each menu object might have a `children` list if the relationship is set up correctly
-        # We need to filter for top-level menus (parent_id is None)
-        top_level_menus = []
-        for menu in all_user_menus_flat:
-            if menu.parent_id is None:
-                top_level_menus.append(menu)
-            # Ensure children loaded via `joinedload` are also from `menu_dict` to maintain consistency
-            # if using explicit children management, not relying solely on backref in all_user_menus_flat.
-            # However, with joinedload, SQLAlchemy usually handles this.
-            
-        # Sort top-level menus by order_index
-        top_level_menus.sort(key=lambda m: m.order_index)
-
-        return top_level_menus
+        return menu_cache.get_menu_tree_for_roles(role_ids)
     
     def get_menus(self):
         """Return all active menu items available to this user through roles."""
-        from sqlalchemy.orm import joinedload,aliased,contains_eager
-        from app.models import MenuItem, MenuInRole, Role, UserInRole
-
-        # menus = (
-        #     MenuItem.query.join(MenuInRole)
-        #     .join(Role)
-        #     .join(UserInRole)
-        #     .filter(UserInRole.user_id == self.id, MenuItem.is_active == True)
-        #     .options(joinedload(MenuItem.children))  # load children for hierarchy
-        #     .order_by(MenuItem.order_index)
-        #     .all()
-        # )
-        Child = aliased(MenuItem)
-        ChildRole = aliased(MenuInRole)
-        ChildUserRole = aliased(UserInRole)
-        ChildRoleTable = aliased(Role)
-
-        menus = (
-            MenuItem.query
-                # Parent joins
-                .join(MenuInRole, MenuItem.id == MenuInRole.menu_id)
-                .join(Role, MenuInRole.role_id == Role.id)
-                .join(UserInRole, Role.id == UserInRole.role_id)
-                .filter(
-                    UserInRole.user_id == self.id,
-                    MenuItem.is_active == True,
-                    MenuItem.parent_id == None   # load only top-level menus first
-                )
-
-                # Child joins (aliased!)
-                .outerjoin(Child, Child.parent_id == MenuItem.id)
-
-                # Child → role
-                .outerjoin(ChildRole, Child.id == ChildRole.menu_id)
-                .outerjoin(ChildRoleTable, ChildRole.role_id == ChildRoleTable.id)
-                .outerjoin(ChildUserRole, ChildRoleTable.id == ChildUserRole.role_id)
-
-                # Keep only children allowed for this user OR if no child
-                .filter(
-                    (Child.id == None) | (ChildUserRole.user_id == self.id)
-                )
-
-                # Tell SQLAlchemy: Child = children relationship
-                .options(contains_eager(MenuItem.children, alias=Child))
-
-                .order_by(MenuItem.order_index)
-                .all()
+        menu_cache.ensure_menu_cache()
+        role_ids = menu_cache.get_role_ids_for_user(
+            self.id,
+            email=self.email,
+            is_admin=self.is_admin,
         )
-        return menus
+        return menu_cache.get_flat_menu_for_roles(role_ids)
     
     def get_anonymous_menu():
-        from sqlalchemy.orm import joinedload
-        from app.models import MenuItem, MenuInRole, Role, UserInRole
-
-        from sqlalchemy.orm import contains_eager,aliased
-        """
-        menus = (
-    MenuItem.query
-        .join(MenuInRole)
-        .filter(
-            MenuInRole.role_id == 1,     # Anonymous users = 1
-            MenuItem.is_active == True
-        )
-        .options(
-            joinedload(MenuItem.children)   # Load children for hierarchy
-        )
-        .order_by(MenuItem.order_index)
-        .all()
-)
-        """
-
-        Child = aliased(MenuItem)
-        ChildRole = aliased(MenuInRole)
-
-        menus = (
-            MenuItem.query
-
-                # 1️⃣ Load only top-level menus assigned to role 1
-                .join(MenuInRole, MenuItem.id == MenuInRole.menu_id)
-                .filter(
-                    MenuItem.parent_id == None,    # parent menu
-                    MenuInRole.role_id == 1,
-                    MenuItem.is_active == True
-                )
-
-                .outerjoin(Child, Child.parent_id == MenuItem.id)
-
-                # 3️⃣ Outer join child's role mapping (aliased!)
-                .outerjoin(ChildRole, Child.id == ChildRole.menu_id)
-
-                # 4️⃣ Keep only children allowed for the same role
-                .filter(
-                    (Child.id == None) | (ChildRole.role_id == 1)
-                )
-
-                # 5️⃣ Eager load the children correctly
-                .options(contains_eager(MenuItem.children, alias=Child))
-
-                .order_by(MenuItem.order_index)
-                .all()
-        )
-        return menus
+        menu_cache.ensure_menu_cache()
+        anonymous_role = menu_cache.get_anonymous_role_id()
+        if anonymous_role is None:
+            return []
+        return menu_cache.get_menu_tree_for_roles({anonymous_role})
     
     # Charts Dashboard methods
     @classmethod

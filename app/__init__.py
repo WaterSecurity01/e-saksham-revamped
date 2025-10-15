@@ -1,4 +1,7 @@
 import os
+import threading
+import time
+from datetime import datetime, timedelta
 from time import perf_counter
 
 from dotenv import load_dotenv
@@ -50,6 +53,40 @@ def create_app():
     login_manager.init_app(app)
     # create_db(app)
 
+    from app.services.menu_cache import ensure_menu_cache, refresh_menu_cache
+    with app.app_context():
+        ensure_menu_cache()
+
+    def _refresh_menu_cache():
+        with app.app_context():
+            refresh_menu_cache()
+
+    app.refresh_menu_cache = _refresh_menu_cache
+
+    def _schedule_menu_cache_refresh():
+        if getattr(app, "_menu_cache_refresher", None) is not None:
+            return
+
+        def _worker():
+            while True:
+                now = datetime.now()
+                next_run = (now + timedelta(days=1)).replace(hour=2, minute=0, second=0, microsecond=0)
+                sleep_for = (next_run - now).total_seconds()
+                if sleep_for <= 0:
+                    sleep_for = 24 * 60 * 60
+                time.sleep(sleep_for)
+                try:
+                    with app.app_context():
+                        refresh_menu_cache()
+                except Exception:
+                    app.logger.exception("Scheduled menu cache refresh failed")
+
+        refresher = threading.Thread(target=_worker, daemon=True, name="MenuCacheAutoRefresh")
+        refresher.start()
+        app._menu_cache_refresher = refresher
+
+    if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        _schedule_menu_cache_refresh()
     app_loggers = get_route_loggers('app')
     app_loggers.activity.info('Application instance initialised')
     # app_loggers.activity.info(f"private key in inint.py:{app.config.get('PRIVATE_KEY')},{public_key_pem}")
