@@ -6,7 +6,9 @@ import os
 from pathlib import Path
 from threading import RLock
 from typing import Dict, Iterable, List, Optional, Set
+from dotenv import load_dotenv
 
+load_dotenv()
 CACHE_PATH = Path(__file__).resolve().parent.parent / "static" / "masters" / "menu_cache.json"
 SYS_ADMIN_EMAILS = os.getenv("SYS_ADMIN_EMAILS", "").split(",")
 SUPER_ADMIN_EMAILS = os.getenv("SUPER_ADMIN_EMAILS", "").split(",")

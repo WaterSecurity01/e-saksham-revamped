@@ -16,7 +16,7 @@ services:
     volumes:
       - .:/workspace  # mount your source code for code-server too
       - ./app/static/scorm_packages:/app/static/scorm_packages
-      - ./app/migrations:/app/migrations
+      - ./migrations:/app/migrations
 
   redis:
     image: redis:7

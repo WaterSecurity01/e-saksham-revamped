@@ -158,7 +158,7 @@ def render_pdf(filename):
         _client_ip(),
         filename
     )
-    file_path = "app/static/pdfs"
+    file_path = "/app/static/pdfs"
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     abs_package_path = os.path.join(BASE_DIR.split("/app")[0], file_path)
     
