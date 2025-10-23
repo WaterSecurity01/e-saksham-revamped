@@ -7,6 +7,10 @@
         <div class="row py-5 mb-5" style="width: 50%;">
             <!-- Added PRINT button BEFORE the card (as requested) -->
             <div class="d-flex justify-content-end align-items-center mb-2">
+                <button type="button" class="btn btn-outline-success no-loader no-print me-2"
+                        onclick="downloadDashboardExcel()">
+                    <i class="fa-solid fa-file-excel"></i> Export Excel
+                </button>
                 <button type="button" class="btn btn-outline-secondary no-loader no-print"
                         onclick="downloadDashboardPDF('dashboardCardDesktop','dashboard_desktop.pdf')">
                     <i class="fa-solid fa-print"></i> Print / PDF
@@ -19,6 +23,8 @@
                         <nav style="--bs-breadcrumb-divider: '>';" class="fs-7" aria-label="breadcrumb">
                             <div class="breadcrumb text-body-secondary" id="breadcrumb"></div>
                         </nav>
+                        <div class="fs-4 fw-semibold text-center mt-3 d-none" id="regionHeading">All States</div>
+                        <div class="text-center text-muted d-none" id="totalSummary"></div>
                     </div>
                     <button class="btn btn-light no-loader visually-hidden mb-2" id="backButton" onclick="goBack()">← Back</button>
                     <div class="row">
@@ -83,6 +89,51 @@ function downloadDashboardPDF(cardId, filename){
     }
 }
 
+function downloadDashboardExcel(){
+    const payload = { level: currentLevel };
+    if (currentLevel === 'districts') {
+        if (!currentData.stateId) {
+            console.warn('State identifier missing for districts export');
+            return;
+        }
+        payload.state_id = currentData.stateId;
+    } else if (currentLevel === 'blocks') {
+        if (!currentData.stateId || !currentData.districtId) {
+            console.warn('State or district identifier missing for blocks export');
+            return;
+        }
+        payload.state_id = currentData.stateId;
+        payload.district_id = currentData.districtId;
+    }
+
+    fetch(ENDPOINTS.export, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to generate Excel');
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const timestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0];
+        link.href = url;
+        link.download = `dashboard_${currentLevel}_${timestamp}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+    })
+    .catch(error => {
+        console.error('Excel export failed:', error);
+        alert('Unable to download Excel at the moment. Please try again later.');
+    });
+}
+
 /* ===== Original Dashboard Logic (UNMODIFIED FUNCTIONALITY) ===== */
 let currentLevel = 'states';
 let currentData = {};
@@ -92,7 +143,8 @@ let currentSearch = '';
 const ENDPOINTS = {
     states: '/dashboard/states',
     districts: '/dashboard/districts',
-    blocks: '/dashboard/blocks'
+    blocks: '/dashboard/blocks',
+    export: '/dashboard/export'
     // districts: (stateId) => `/api/districts?state_id=${encodeURIComponent(stateId)}`,
     // blocks: (districtId) => `/api/blocks?district_id=${encodeURIComponent(districtId)}`
 
@@ -105,8 +157,9 @@ document.addEventListener('DOMContentLoaded', function() {
 function loadStates() {
     showTableLoader(true);
     currentLevel = 'states';
+    currentData = {};
     navigationStack = [];
-    updateHeader('Yuktdhara Dashboard - States', '');
+    updateHeader('Yuktdhara Dashboard - States', 'All States');
     fetch(ENDPOINTS.states)
         .then(response => {
             if(response.ok) return response.json();
@@ -237,6 +290,12 @@ function renderTable(data, level) {
     html += `<tfoot><tr class="text-center"><th colspan="2">Total</th><th>${total_count}</th>`;
     if (level != 'blocks') html += '<th></th>';
     html += '</tr></tfoot></table>';
+    const totalSummary = document.getElementById('totalSummary');
+    if (totalSummary) {
+        const regionHeading = document.getElementById('regionHeading');
+        const regionLabel = regionHeading ? regionHeading.textContent : 'Region';
+        totalSummary.textContent = `${regionLabel} – Total Users: ${total_count}`;
+    }
     document.getElementById('tableContainer').innerHTML = html;
 
     document.getElementById('searchContainer').style.display = 'none';
@@ -259,6 +318,10 @@ function handleClick(level, id, name, stateId, districtId) {
 
 function updateHeader(title, breadcrumb) {
     document.getElementById('pageTitle').textContent = title;
+    const regionHeading = document.getElementById('regionHeading');
+    if (regionHeading) {
+        regionHeading.textContent = breadcrumb || 'All States';
+    }
     const breadcrumbDiv = document.getElementById('breadcrumb');
     breadcrumbDiv.innerHTML = '';
     const root = document.createElement('li');
@@ -272,6 +335,11 @@ function updateHeader(title, breadcrumb) {
             li.textContent = item.data.name;
             breadcrumbDiv.appendChild(li);
         });
+    } else if (breadcrumb) {
+        const li = document.createElement('li');
+        li.className = 'breadcrumb-item active';
+        li.textContent = breadcrumb;
+        breadcrumbDiv.appendChild(li);
     }
     const backButton = document.getElementById('backButton');
     if (navigationStack.length > 0) backButton.classList.remove('visually-hidden');
@@ -286,7 +354,9 @@ function goBack() {
             loadStates();
             break;
         case 'districts':
-            loadDistricts(currentData.stateId, navigationStack[0].data.name); // could be refined to specific state if needed
+            const stateEntry = navigationStack[0];
+            const stateName = stateEntry ? stateEntry.data.name : 'All States';
+            loadDistricts(currentData.stateId, stateName);
             break;
         case 'blocks':
             // reserved for later use if required

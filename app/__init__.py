@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from time import perf_counter
 
 from dotenv import load_dotenv
-from flask import Flask, abort, g, jsonify, request, url_for
+from flask import Flask, abort, g, jsonify, request, session, url_for
 from flask_login import LoginManager, current_user
 from flask_migrate import Migrate
 from flask_wtf import CSRFProtect
@@ -296,7 +296,8 @@ def create_app():
                 'nav_menus': nav_menus, # Structured menus for navigation
                 'page_title': page_title,
                 'page_subtitle': page_subtitle,
-                'breadcrumbs': breadcrumbs
+                'breadcrumbs': breadcrumbs,
+                'user_role_id': session.get('user_role_id','')
             }
         except Exception as ex:
             # error_logger.error(f"Error injecting template context: {ex}", exc_info=True)
@@ -305,6 +306,7 @@ def create_app():
             return {
                 'visit_count': '0000000', 'name': '', 'average_rating': 0.0,
                 'nav_menus': [], 'page_title': 'Error', 'page_subtitle': 'Something went wrong',
-                'breadcrumbs': [{'url': url_for('routes.index'), 'name': 'Home'}]
+                'breadcrumbs': [{'url': url_for('routes.index'), 'name': 'Home',}],
+                'user_role_id': session.get('user_role_id','')
             }
     return app

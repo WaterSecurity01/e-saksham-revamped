@@ -218,7 +218,6 @@ def view_logs():
 
 @blp.route('/user_management')
 @login_required
-@admin_required
 def user_management():
     # Just render the HTML, JS will fetch users via API
     access_logger.info(
@@ -233,7 +232,6 @@ def user_management():
 
 @blp.route('/export_users')
 @login_required
-@admin_required
 def export_users():
     access_logger.info(
         'Route accessed | action=admin.export_users | method=%s | path=%s | ip=%s | user_id=%s',

@@ -19,9 +19,11 @@
                             <a href="{{url_for('admin.export_users')}}" class="btn btn-success me-2">
                                 <i class="fas fa-file-excel"></i> Export Users
                             </a>
+                            {%if user_role_id == 5%}
                             <a href="{{url_for('admin.add_user')}}" class="btn btn-primary">
                                 <i class="fas fa-user-plus"></i> Add New User
                             </a>
+                            {%endif%}
                         </div>
                     </div>
                     <div class="row mt-4">
@@ -140,8 +142,10 @@
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown">
                                     <li><a class="dropdown-item" href="{{url_for('admin.export_users')}}"><i
                                                 class="fas fa-file-excel me-2"></i> Export Users</a></li>
+                                    {% if user_role_id == 5 %}
                                     <li><a class="dropdown-item" href="{{url_for('admin.add_user')}}"><i
                                                 class="fas fa-user-plus me-2"></i> Add New User</a></li>
+                                    {% endif %}
                                 </ul>
                             </div>
                         </div>
@@ -209,6 +213,9 @@
     let state_id = '', district_id = '', block_id = '';
     let isDesktop = window.innerWidth >= 768;
     let loadingCounter = 0;
+    const userRoleId = {{ (user_role_id or 0)|int }};
+    const canManageAdmins = userRoleId === 4 || userRoleId === 5;
+    const canDeleteUsers = userRoleId === 5;
 
     /* ===================== UTILS ===================== */
     function getCsrfToken() {
@@ -414,6 +421,16 @@
         const tbody = document.querySelector('#usersTable tbody');
         tbody.innerHTML = '';
         users.forEach((u, idx) => {
+            const adminToggleHtml = canManageAdmins
+                ? `<div class="form-check form-switch d-flex justify-content-center m-0">
+                    <input type="checkbox" class="user-form-check-input admin-toggle" data-uuid="${u.uuid}" ${u.is_admin ? "checked" : ""}>
+                </div>`
+                : `<span class="text-muted small">&mdash;</span>`;
+            const deleteButtonHtml = canDeleteUsers
+                ? `<button type="button" class="btn btn-sm btn-danger action-btn delete-user-btn" data-uuid="${u.uuid}" data-name="${escapeHtml(u.name)}" data-email="${escapeHtml(u.email)}" title="Delete User">
+                    <i class="fas fa-trash-alt"></i>
+                </button>`
+                : '';
             tbody.insertAdjacentHTML('beforeend', `
         <tr>
             <td>${(page - 1) * perPage + idx + 1}</td>
@@ -429,17 +446,13 @@
                 </div>
             </td>
             <td class="text-center">
-                <div class="form-check form-switch d-flex justify-content-center m-0">
-                    <input type="checkbox" class="user-form-check-input admin-toggle" data-uuid="${u.uuid}" ${u.is_admin ? "checked" : ""}>
-                </div>
+                ${adminToggleHtml}
             </td>
             <td class="user-actions">
                 <button type="button" class="btn btn-sm btn-warning action-btn reset-password-btn" data-uuid="${u.uuid}" data-email="${escapeHtml(u.email)}" data-name="${escapeHtml(u.name)}" title="Reset Password">
                     <i class="fas fa-key"></i>
                 </button>
-                <button type="button" class="btn btn-sm btn-danger action-btn delete-user-btn" data-uuid="${u.uuid}" data-name="${escapeHtml(u.name)}" data-email="${escapeHtml(u.email)}" title="Delete User">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
+                ${deleteButtonHtml}
             </td>
         </tr>
         `);
@@ -505,6 +518,23 @@
         const list = document.getElementById('usersList');
         list.innerHTML = '';
         users.forEach((u, idx) => {
+            const adminToggleMobile = canManageAdmins
+                ? `<label class="d-inline-flex align-items-center m-0">
+                        <span class="me-1">Admin:</span>
+                        <input
+                            type="checkbox"
+                            class="user-form-check-input admin-toggle-mobile ms-1"
+                            id="admin-${u.uuid}"
+                            data-user-uuid="${u.uuid}"
+                            ${u.is_admin ? "checked" : ""}>
+                    </label>`
+                : '';
+            const deleteButtonMobile = canDeleteUsers
+                ? `<button type="button" class="btn btn-sm btn-danger mobile-action-btn delete-user-btn-mobile ms-1"
+                        data-user-uuid="${u.uuid}" data-user-name="${escapeHtml(u.name)}" data-user-email="${escapeHtml(u.email)}" title="Delete User">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>`
+                : '';
             list.insertAdjacentHTML('beforeend', `
         <div class="list-group-item list-group-item-action user-row-mobile mobile-list-item"
              data-name="${escapeHtml(u.name)}" 
@@ -532,25 +562,14 @@
                             data-user-uuid="${u.uuid}"
                             ${u.is_active ? "checked" : ""}>
                     </label>
-                    <label class="d-inline-flex align-items-center m-0">
-                        <span class="me-1">Admin:</span>
-                        <input
-                            type="checkbox"
-                            class="user-form-check-input admin-toggle-mobile ms-1"
-                            id="admin-${u.uuid}"
-                            data-user-uuid="${u.uuid}"
-                            ${u.is_admin ? "checked" : ""}>
-                    </label>
+                    ${adminToggleMobile}
                 </div>
                 <div class="d-flex align-items-center ms-auto">
                     <button type="button" class="btn btn-sm btn-warning mobile-action-btn reset-password-btn-mobile"
                         data-user-uuid="${u.uuid}" data-user-email="${escapeHtml(u.email)}" data-user-name="${escapeHtml(u.name)}" title="Reset Password">
                         <i class="fas fa-key"></i>
                     </button>
-                    <button type="button" class="btn btn-sm btn-danger mobile-action-btn delete-user-btn-mobile ms-1"
-                        data-user-uuid="${u.uuid}" data-user-name="${escapeHtml(u.name)}" data-user-email="${escapeHtml(u.email)}" title="Delete User">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
+                    ${deleteButtonMobile}
                 </div>
             </div>
         </div>

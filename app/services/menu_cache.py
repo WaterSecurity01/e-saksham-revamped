@@ -7,6 +7,7 @@ from pathlib import Path
 from threading import RLock
 from typing import Dict, Iterable, List, Optional, Set
 from dotenv import load_dotenv
+from flask import session
 
 load_dotenv()
 CACHE_PATH = Path(__file__).resolve().parent.parent / "static" / "masters" / "menu_cache.json"
@@ -175,6 +176,8 @@ def get_role_ids_for_user(
 
     if not resolved and _default_role_id is not None:
         resolved.add(_default_role_id)
+    
+    session['user_role_id'] = max(resolved) if resolved else ""
 
     return resolved
 

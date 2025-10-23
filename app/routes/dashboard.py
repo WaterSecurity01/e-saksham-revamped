@@ -1,13 +1,17 @@
 from collections import defaultdict
+from datetime import datetime
+from io import BytesIO
 from typing import List
 
-from flask import Blueprint, json, jsonify, render_template, request
+from flask import Blueprint, json, jsonify, render_template, request, send_file
 from flask_login import login_required
 
 from app.classes.helper import orm_to_dict_list
 from app.classes.logging import get_route_loggers , _client_ip
 from app.models.user import User
 from app.models.user_courses import UserCourse
+from app.models.state_ut import State_UT
+from app.models.district import District
 
 from app.models.activity_dashboard import (
     db,
@@ -239,6 +243,98 @@ def get_dashboard_blocks():
         return jsonify({'error': 'Failed to fetch blocks data'}), 500
 
 
+@blp.route('/export', methods=['POST'])
+def export_dashboard_excel():
+    access_logger.info(
+        'Route accessed | action=dashboard.export_excel | method=%s | path=%s | ip=%s',
+        request.method,
+        request.path,
+        _client_ip()
+    )
+    payload = request.get_json(silent=True) or {}
+    level = (payload.get('level') or 'states').lower()
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Alignment, Font
+    except ImportError:
+        error_logger.error('openpyxl is required for Excel export but is not installed')
+        return jsonify({'error': 'Excel export is unavailable'}), 500
+
+    try:
+        heading_label = 'All States'
+        if level == 'states':
+            records = UserCourse.get_state_count()
+            headers = ["S.No", "State Name", "User Count"]
+            rows = [[idx, rec.get("name", ""), rec.get("user_count", 0)] for idx, rec in enumerate(records, start=1)]
+        elif level == 'districts':
+            state_id = payload.get('state_id')
+            if state_id is None:
+                return jsonify({'error': 'state_id is required for districts export'}), 400
+            records = UserCourse.get_district_count(state_id)
+            headers = ["S.No", "District Name", "User Count"]
+            rows = [[idx, rec.get("name", ""), rec.get("user_count", 0)] for idx, rec in enumerate(records, start=1)]
+            state = State_UT.query.with_entities(State_UT.name).filter(State_UT.id == state_id).first()
+            if state and state[0]:
+                heading_label = state[0]
+            else:
+                heading_label = f"State ID {state_id}"
+        elif level == 'blocks':
+            state_id = payload.get('state_id')
+            district_id = payload.get('district_id')
+            if state_id is None or district_id is None:
+                return jsonify({'error': 'state_id and district_id are required for blocks export'}), 400
+            records = UserCourse.get_block_count(state_id, district_id)
+            headers = ["S.No", "Block Name", "User Count"]
+            rows = [[idx, rec.get("name", ""), rec.get("user_count", 0)] for idx, rec in enumerate(records, start=1)]
+            district = District.query.with_entities(District.name).filter(District.id == district_id).first()
+            if district and district[0]:
+                heading_label = district[0]
+            else:
+                heading_label = f"District ID {district_id}"
+        else:
+            return jsonify({'error': 'Invalid export level'}), 400
+
+        total_count = sum(int(rec.get("user_count", 0) or 0) for rec in records)
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.title = level.capitalize()
+        worksheet.append([heading_label])
+        worksheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
+        heading_cell = worksheet.cell(row=1, column=1)
+        heading_cell.font = Font(bold=True, size=14)
+        heading_cell.alignment = Alignment(horizontal='center')
+
+        worksheet.append([])
+
+        worksheet.append(headers)
+        header_row_idx = worksheet.max_row
+        for cell in worksheet[header_row_idx]:
+            cell.font = Font(bold=True)
+
+        for row in rows:
+            worksheet.append(row)
+
+        worksheet.append(["", "Total Users", total_count])
+        total_row_idx = worksheet.max_row
+        for cell in worksheet[total_row_idx]:
+            cell.font = Font(bold=True)
+
+        stream = BytesIO()
+        workbook.save(stream)
+        stream.seek(0)
+
+        filename = f"dashboard_{level}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        activity_logger.info('Dashboard export prepared | level=%s | rows=%d', level, len(rows))
+        return send_file(
+            stream,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    except Exception:
+        error_logger.exception('Error exporting dashboard excel | level=%s', level)
+        return jsonify({'error': 'Failed to export Excel'}), 500
+
 
 @blp.route('/activity_identification', methods=['GET'])
 @login_required
@@ -288,5 +384,3 @@ def activity_identification():
         major_scheduled_category=major_scheduled_category,
         permissible_works=permissible_works,
     )
-
-

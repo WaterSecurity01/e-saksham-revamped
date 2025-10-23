@@ -331,7 +331,6 @@ def charts_dashboard_data():
     
 @blp.route('/users')
 @login_required
-@admin_required
 def api_users():
     # Query params
     page         = request.args.get('page', 1, type=int)
@@ -460,7 +459,6 @@ def api_users():
     
 @blp.route('/toggle-admin/<uuid>')
 @login_required
-@admin_required
 def api_toggle_admin(uuid):
     access_logger.info(
         'API request | action=api.toggle_admin | method=%s | path=%s | ip=%s | target_uuid=%s | actor_id=%s',
@@ -489,7 +487,6 @@ def api_toggle_admin(uuid):
 
 @blp.route('/toggle-user-status/<string:user_uuid>', methods=['POST'])
 @login_required
-@admin_required
 def toggle_user_status(user_uuid):
     access_logger.info(
         'API request | action=api.toggle_user_status | method=%s | path=%s | ip=%s | target_uuid=%s | actor_id=%s',
@@ -520,7 +517,6 @@ def toggle_user_status(user_uuid):
 
 @blp.route('/reset-password/<string:user_uuid>', methods=['POST'])
 @login_required
-@admin_required
 def reset_password(user_uuid):
     access_logger.info(
         'API request | action=api.reset_password | method=%s | path=%s | ip=%s | target_uuid=%s | actor_id=%s',
