@@ -4,6 +4,7 @@ from flask import Blueprint, current_app, flash, jsonify, redirect, request, ses
 from flask_login import current_user, login_required
 from sqlalchemy import asc, desc, func, or_
 from sqlalchemy.orm import joinedload
+from markupsafe import Markup, escape
 
 from app import db
 from app.classes.helper import _build_enriched_options, admin_required, orm_to_dict_list
@@ -45,6 +46,9 @@ def states():
     )
     try:
         states = State_UT.query.all()
+        if current_user.is_authenticated and session.get('user_role_id') == 3:
+            user_state_id = current_user.state_id
+            states = [s for s in states if s.id == user_state_id]
         state_list = [{"id": d.id, "name": d.name} for d in states]
         activity_logger.info('States fetched | count=%d | ip=%s', len(state_list), _client_ip())
         return jsonify(state_list), 200
@@ -405,17 +409,22 @@ def api_users():
         query = query.order_by(sort_column)
 
         users_page = query.paginate(page=page, per_page=per_page, error_out=False)
-
+        user_role_id = session.get('user_role_id')
         # Build response list
         users = []
         for u in users_page.items:
             # State_UT earlier code referenced .short_name; fall back to .name if not present.
+            if user_role_id != 5:
+                if 'esaksham.nic.in' in u.email:
+                    continue
+            if u.email == current_user.email:
+                continue
             state_val = ''
             if u.state:
                 state_val = getattr(u.state, 'short_name', None) or getattr(u.state, 'name', '') or ''
             district_val = u.district.name if u.district else ''
             block_val = u.block.name if u.block else ''
-
+            
             users.append({
                 'id': u.id,
                 'uuid': u.uuid,
@@ -445,7 +454,7 @@ def api_users():
             'users': users,
             'page': users_page.page,
             'total_pages': users_page.pages,
-            'total_users': users_page.total
+            'total_users': len(users)
         })
     except Exception:
         error_logger.exception(
@@ -468,10 +477,61 @@ def api_toggle_admin(uuid):
         uuid,
         getattr(current_user, 'id', None)
     )
+    user_email = None
     try:
         user = User.query.filter_by(uuid=uuid).first_or_404()
+        user_email = user.email
+        if not user.state_id:
+            message = Markup(
+                "User <strong>{email}</strong> is not assigned to any state."
+            ).format(email=escape(user.email or ''))
+            flash(message, 'warning')
+            activity_logger.warning(
+                'Admin toggle failed - no state assigned | target_user=%s | actor_id=%s | ip=%s',
+                user.email,
+                getattr(current_user, 'id', None),
+                _client_ip()
+            )
+            return jsonify({
+                'success': False,
+                'message': message,
+                'redirect': url_for('admin.user_management')
+            })
+        check_duplicate = User.get_state_admin(user.state_id)
+        if user.state_id and check_duplicate and check_duplicate.id != user.id:
+            message = Markup(
+                "Only one admin is allowed per state. "
+                "<strong>{existing}</strong> is already the state admin for "
+                "<strong>{state}</strong>"
+            ).format(
+                existing=escape(check_duplicate.email or ''),
+                state=escape(user.state.short_name or '')
+            )
+            flash(message, 'warning')
+            activity_logger.warning(
+                'Admin toggle failed - existing state admin | target_user=%s | actor_id=%s | ip=%s',
+                user.email,
+                getattr(current_user, 'id', None),
+                _client_ip()
+            )
+            return jsonify({
+                'success': False,
+                'message': message,
+                'redirect': url_for('admin.user_management')
+            })
         user.is_admin = not user.is_admin
         db.session.commit()
+        status_text = "assigned state admin role" if user.is_admin else "removed from the state admin role"
+        state_name = getattr(user.state, 'short_name', None) or getattr(user.state, 'name', '') or ''
+        state_clause = Markup(" for <strong>{state}</strong>").format(state=escape(state_name)) if state_name else ''
+        success_message = Markup(
+            "<strong>{email}</strong> has been {status}{state_clause}."
+        ).format(
+            email=escape(user.email or ''),
+            status=escape(status_text),
+            state_clause=state_clause
+        )
+        flash(success_message, 'success')
         activity_logger.info(
             'Admin status toggled | target_user=%s | is_admin=%s | actor_id=%s | ip=%s',
             user.email,
@@ -479,11 +539,25 @@ def api_toggle_admin(uuid):
             getattr(current_user, 'id', None),
             _client_ip()
         )
-        return jsonify({'success': True, 'is_admin': user.is_admin})
+        return jsonify({
+            'success': True,
+            'is_admin': user.is_admin,
+            'redirect': url_for('admin.user_management')
+        })
     except Exception:
         db.session.rollback()
         error_logger.exception('Error toggling admin status | user_uuid=%s', uuid)
-        return jsonify({'success': False, 'message': 'Failed to toggle admin status'}), 500
+        flash(
+            Markup("Unable to update admin role for <strong>{email}</strong>.").format(
+                email=escape(user_email or uuid)
+            ),
+            'error'
+        )
+        return jsonify({
+            'success': False,
+            'message': 'Failed to toggle admin status',
+            'redirect': url_for('admin.user_management')
+        }), 500
 
 @blp.route('/toggle-user-status/<string:user_uuid>', methods=['POST'])
 @login_required
@@ -496,12 +570,22 @@ def toggle_user_status(user_uuid):
         user_uuid,
         getattr(current_user, 'id', None)
     )
+    user_email = None
     try:
         data = request.get_json()
         is_active = data.get('is_active', False)
         user = User.query.filter_by(uuid=user_uuid).first_or_404()
+        user_email = user.email
         user.is_active = is_active
         db.session.commit()
+        status_text = "activated" if is_active else "deactivated"
+        success_message = Markup(
+            "Account for <strong>{email}</strong> has been {status}."
+        ).format(
+            email=escape(user.email or ''),
+            status=escape(status_text)
+        )
+        flash(success_message, 'success')
         activity_logger.info(
             'User status toggled | target_user=%s | is_active=%s | actor_id=%s | ip=%s',
             user.email,
@@ -509,11 +593,21 @@ def toggle_user_status(user_uuid):
             getattr(current_user, 'id', None),
             _client_ip()
         )
-        return jsonify({'success': True})
+        return jsonify({'success': True, 'redirect': url_for('admin.user_management')})
     except Exception:
         db.session.rollback()
         error_logger.exception('Error toggling user status | user_uuid=%s', user_uuid)
-        return jsonify({'success': False, 'message': 'Failed to toggle user status'}), 500
+        flash(
+            Markup("Unable to update status for <strong>{email}</strong>.").format(
+                email=escape(user_email or user_uuid)
+            ),
+            'error'
+        )
+        return jsonify({
+            'success': False,
+            'message': 'Failed to toggle user status',
+            'redirect': url_for('admin.user_management')
+        }), 500
 
 @blp.route('/reset-password/<string:user_uuid>', methods=['POST'])
 @login_required
@@ -566,12 +660,27 @@ def delete_user(user_uuid):
             getattr(current_user, 'id', None),
             _client_ip()
         )
-        flash(f'User {user.name} deleted Successfully', 'success')
+        flash(
+            Markup("User <strong>{email}</strong> deleted successfully.").format(
+                email=escape(user.email or '')
+            ),
+            'success'
+        )
+        return jsonify({'success': True, 'redirect': url_for('admin.user_management')})
     except Exception as e:
         db.session.rollback()
         error_logger.exception('Error deleting user | user_uuid=%s', user_uuid)
-        flash(f'Error deleting user {user.name}: {e}', 'error')
-    return redirect(url_for('admin.user_management'))
+        flash(
+            Markup("Unable to delete <strong>{email}</strong>. Please try again.").format(
+                email=escape(user.email or '')
+            ),
+            'error'
+        )
+        return jsonify({
+            'success': False,
+            'message': 'Failed to delete user',
+            'redirect': url_for('admin.user_management')
+        }), 500
 
 
 @blp.route('/update_completion', methods=['POST'])

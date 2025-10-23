@@ -169,6 +169,10 @@ class User(UserMixin, db.Model):
         #     return None
 
     @classmethod
+    def get_state_admin(cls, state_id):
+        return cls.query.filter_by(state_id=state_id, is_admin=True).first()
+
+    @classmethod
     def get_all(cls):
         return cls.query.order_by(cls.id.desc())
         # try:

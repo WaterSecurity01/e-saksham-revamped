@@ -100,8 +100,10 @@
                                         <th scope="col" class="sortable" data-sort="registered_on">Registration Date
                                             <span class="sort-icon" data-col="registered_on"></span></th>
                                         <th scope="col" style="width:80px;">Active</th>
+                                        {% if user_role_id in [4,5] %}
                                         <th class="text-center" scope="col" style="width:70px;">Admin</th>
-                                        <th scope="col" style="width:140px;">Actions</th>
+                                        {% endif %}
+                                        <th scope="col" style="width:140px;">Reset Password</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -330,10 +332,12 @@
         fetch('/api/states')
             .then(r => r.json())
             .then(data => {
-                data.sort((a, b) => a.name.localeCompare(b.name));
-                let s = document.getElementById(selectId);
-                if (!s) return;
-                s.innerHTML = `<option value="">All States</option>` + data.map(st => `<option value="${st.id}" ${selected == st.id ? "selected" : ""}>${st.name}</option>`).join('');
+                const states = Array.isArray(data) ? data : [];
+                states.sort((a, b) => a.name.localeCompare(b.name));
+                const selectEl = document.getElementById(selectId);
+                if (!selectEl) return;
+                selectEl.innerHTML = `<option value="">All States</option>` +
+                    states.map(st => `<option value="${st.id}" ${selected == st.id ? "selected" : ""}>${st.name}</option>`).join('');
             })
             .catch(() => {})
             .finally(() => showLoading(false));
@@ -422,10 +426,14 @@
         tbody.innerHTML = '';
         users.forEach((u, idx) => {
             const adminToggleHtml = canManageAdmins
-                ? `<div class="form-check form-switch d-flex justify-content-center m-0">
+                ? `<div class="form-check form-switch d-flex justify-content-center m-0 p-0">
                     <input type="checkbox" class="user-form-check-input admin-toggle" data-uuid="${u.uuid}" ${u.is_admin ? "checked" : ""}>
                 </div>`
-                : `<span class="text-muted small">&mdash;</span>`;
+                : '';
+            const adminColumnCell = canManageAdmins
+                ? `<td class="text-center">
+                ${adminToggleHtml}
+            </td>` : '';
             const deleteButtonHtml = canDeleteUsers
                 ? `<button type="button" class="btn btn-sm btn-danger action-btn delete-user-btn" data-uuid="${u.uuid}" data-name="${escapeHtml(u.name)}" data-email="${escapeHtml(u.email)}" title="Delete User">
                     <i class="fas fa-trash-alt"></i>
@@ -441,14 +449,12 @@
             <td>${escapeHtml(u.block || '')}</td>
             <td class="timestamp">${escapeHtml(u.registered_on)}</td>
             <td>
-                <div class="form-check form-switch d-flex justify-content-center m-0">
+                <div class="form-check form-switch d-flex justify-content-center m-0 p-0 pe-3">
                     <input type="checkbox" class="user-form-check-input status-toggle" data-uuid="${u.uuid}" ${u.is_active ? "checked" : ""}>
                 </div>
             </td>
-            <td class="text-center">
-                ${adminToggleHtml}
-            </td>
-            <td class="user-actions">
+            ${adminColumnCell}
+            <td class="user-actions text-center">
                 <button type="button" class="btn btn-sm btn-warning action-btn reset-password-btn" data-uuid="${u.uuid}" data-email="${escapeHtml(u.email)}" data-name="${escapeHtml(u.name)}" title="Reset Password">
                     <i class="fas fa-key"></i>
                 </button>
@@ -462,25 +468,62 @@
     function addDesktopActionListeners() {
         document.querySelectorAll('.status-toggle').forEach(el => {
             el.onchange = function () {
+                const checkbox = this;
+                const previousValue = !checkbox.checked;
                 showLoading(true);
-                fetch(`/api/toggle-user-status/${this.dataset.uuid}`, {
+                fetch(`/api/toggle-user-status/${checkbox.dataset.uuid}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-                    body: JSON.stringify({ is_active: this.checked })
-                }).then(r => r.json()).then(data => {
-                    if (!data.success) { alert('Failed to update status'); fetchUsers(currentPage); }
-                }).catch(() => alert('Network error updating status')).finally(() => showLoading(false));
+                    body: JSON.stringify({ is_active: checkbox.checked })
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                            return;
+                        }
+                        if (!data.success) {
+                            checkbox.checked = previousValue;
+                            alert('Failed to update status');
+                            fetchUsers(currentPage);
+                        }
+                    })
+                    .catch(() => {
+                        checkbox.checked = previousValue;
+                        alert('Network error updating status');
+                    })
+                    .finally(() => showLoading(false));
             };
         });
         document.querySelectorAll('.admin-toggle').forEach(el => {
             el.onchange = function () {
+                const checkbox = this;
+                const previousValue = !checkbox.checked;
                 showLoading(true);
-                fetch(`/api/toggle-admin/${this.dataset.uuid}`, {
+                fetch(`/api/toggle-admin/${checkbox.dataset.uuid}`, {
                     method: 'GET',
                     headers: { 'X-CSRFToken': getCsrfToken() }
-                }).then(r => r.json()).then(data => {
-                    if (!data.success) { alert('Failed to update admin flag'); fetchUsers(currentPage); }
-                }).catch(() => alert('Network error updating admin flag')).finally(() => showLoading(false));
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.redirect) {
+                            if (!data.success) {
+                                checkbox.checked = previousValue;
+                            }
+                            window.location.href = data.redirect;
+                            return;
+                        }
+                        if (!data.success) {
+                            checkbox.checked = previousValue;
+                            alert(data.message || 'Failed to update admin flag');
+                            fetchUsers(currentPage);
+                        }
+                    })
+                    .catch(() => {
+                        checkbox.checked = previousValue;
+                        alert('Network error updating admin flag');
+                    })
+                    .finally(() => showLoading(false));
             };
         });
         document.querySelectorAll('.reset-password-btn').forEach(el => {
@@ -504,10 +547,21 @@
                     fetch(`/api/delete-user/${this.dataset.uuid}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() }
-                    }).then(r => r.json()).then(data => {
-                        alert(data.success ? 'Deleted.' : 'Error deleting user');
-                        fetchUsers(currentPage);
-                    }).catch(() => alert('Network error deleting user')).finally(() => showLoading(false));
+                    })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.redirect) {
+                                window.location.href = data.redirect;
+                                return;
+                            }
+                            if (!data.success) {
+                                alert('Error deleting user');
+                            } else {
+                                fetchUsers(currentPage);
+                            }
+                        })
+                        .catch(() => alert('Network error deleting user'))
+                        .finally(() => showLoading(false));
                 }
             };
         });
@@ -580,25 +634,62 @@
     function addMobileActionListeners() {
         document.querySelectorAll('.status-toggle-mobile').forEach(el => {
             el.onchange = function () {
+                const checkbox = this;
+                const previousValue = !checkbox.checked;
                 showLoading(true);
-                fetch(`/api/toggle-user-status/${this.dataset.userUuid}`, {
+                fetch(`/api/toggle-user-status/${checkbox.dataset.userUuid}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-                    body: JSON.stringify({ is_active: this.checked })
-                }).then(r => r.json()).then(data => {
-                    if (!data.success) { alert('Failed to update status'); fetchUsers(currentPage); }
-                }).catch(() => alert('Network error updating status')).finally(() => showLoading(false));
+                    body: JSON.stringify({ is_active: checkbox.checked })
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                            return;
+                        }
+                        if (!data.success) {
+                            checkbox.checked = previousValue;
+                            alert('Failed to update status');
+                            fetchUsers(currentPage);
+                        }
+                    })
+                    .catch(() => {
+                        checkbox.checked = previousValue;
+                        alert('Network error updating status');
+                    })
+                    .finally(() => showLoading(false));
             };
         });
         document.querySelectorAll('.admin-toggle-mobile').forEach(el => {
             el.onchange = function () {
+                const checkbox = this;
+                const previousValue = !checkbox.checked;
                 showLoading(true);
-                fetch(`/api/toggle-admin/${this.dataset.userUuid}`, {
+                fetch(`/api/toggle-admin/${checkbox.dataset.userUuid}`, {
                     method: 'GET',
                     headers: { 'X-CSRFToken': getCsrfToken() }
-                }).then(r => r.json()).then(data => {
-                    if (!data.success) { alert('Failed to update admin flag'); fetchUsers(currentPage); }
-                }).catch(() => alert('Network error updating admin flag')).finally(() => showLoading(false));
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.redirect) {
+                            if (!data.success) {
+                                checkbox.checked = previousValue;
+                            }
+                            window.location.href = data.redirect;
+                            return;
+                        }
+                        if (!data.success) {
+                            checkbox.checked = previousValue;
+                            alert(data.message || 'Failed to update admin flag');
+                            fetchUsers(currentPage);
+                        }
+                    })
+                    .catch(() => {
+                        checkbox.checked = previousValue;
+                        alert('Network error updating admin flag');
+                    })
+                    .finally(() => showLoading(false));
             };
         });
         document.querySelectorAll('.reset-password-btn-mobile').forEach(el => {
@@ -622,10 +713,21 @@
                     fetch(`/api/delete-user/${this.dataset.userUuid}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() }
-                    }).then(r => r.json()).then(data => {
-                        alert(data.success ? 'Deleted.' : 'Error deleting user');
-                        fetchUsers(currentPage);
-                    }).catch(() => alert('Network error deleting user')).finally(() => showLoading(false));
+                    })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.redirect) {
+                                window.location.href = data.redirect;
+                                return;
+                            }
+                            if (!data.success) {
+                                alert('Error deleting user');
+                            } else {
+                                fetchUsers(currentPage);
+                            }
+                        })
+                        .catch(() => alert('Network error deleting user'))
+                        .finally(() => showLoading(false));
                 }
             };
         });
